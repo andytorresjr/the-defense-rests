@@ -1,0 +1,92 @@
+/* The courtroom scene: bench, witness stand, counsel tables, jury box. */
+#screen-court { flex-direction: column; }
+
+#topbar {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 8px 18px;
+  background: linear-gradient(180deg, var(--wood-dark), #201409);
+  border-bottom: 2px solid var(--brass);
+  font-family: Georgia, serif; letter-spacing: .12em; font-size: 14px;
+  color: var(--brass);
+}
+#phase-label { color: var(--muted); letter-spacing: .08em; }
+
+#stage {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 260px;
+  background:
+    linear-gradient(180deg, rgba(0,0,0,.35), transparent 30%),
+    linear-gradient(180deg, #3a2917 0%, #2c1f10 55%, #241a0d 100%);
+  overflow: hidden;
+}
+/* wood paneling */
+#stage::before {
+  content: ""; position: absolute; inset: 0 0 40% 0;
+  background: repeating-linear-gradient(90deg, rgba(0,0,0,.12) 0 4px, transparent 4px 90px);
+}
+/* floor */
+#stage::after {
+  content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 26%;
+  background: linear-gradient(180deg, #1d1409, #150e06);
+  border-top: 3px solid #0d0903;
+}
+
+.plate {
+  background: var(--wood-dark); color: var(--brass);
+  border: 1px solid rgba(201,162,94,.5); border-radius: 3px;
+  font-size: 10.5px; letter-spacing: .14em; padding: 3px 8px; text-align: center;
+  font-family: Georgia, serif; white-space: nowrap;
+}
+
+#bench {
+  position: absolute; top: 4%; left: 50%; transform: translateX(-50%);
+  display: flex; flex-direction: column; align-items: center; gap: 4px; z-index: 3;
+}
+#bench::after {
+  content: ""; order: -1; width: 300px; height: 18px; margin-bottom: -10px;
+}
+#bench .portrait { filter: drop-shadow(0 6px 8px rgba(0,0,0,.5)); }
+
+#jury-box {
+  position: absolute; top: 10%; left: 2.5%;
+  display: flex; flex-direction: column; gap: 6px; align-items: center;
+  background: rgba(0,0,0,.25); border: 2px solid var(--wood-light);
+  border-radius: 6px; padding: 10px 12px; z-index: 2;
+}
+#jury-strip { display: grid; grid-template-columns: repeat(6, 16px); gap: 6px; min-height: 38px; }
+.juror-dot {
+  width: 16px; height: 16px; border-radius: 50% 50% 40% 40%;
+  border: 1px solid rgba(0,0,0,.5);
+  transition: background .8s;
+}
+
+#stand {
+  position: absolute; bottom: 18%; left: 50%; transform: translateX(-50%);
+  display: flex; flex-direction: column; align-items: center; gap: 5px; z-index: 4;
+}
+#stand.occupied::after {
+  content: ""; width: 170px; height: 46px; margin-top: -34px;
+  background: linear-gradient(180deg, var(--wood-light), var(--wood));
+  border: 2px solid #1c1208; border-bottom: none; border-radius: 8px 8px 0 0; z-index: 5;
+}
+
+#pros-table { position: absolute; bottom: 6%; right: 7%; display: flex; flex-direction: column; align-items: center; gap: 4px; z-index: 3; }
+#def-table  { position: absolute; bottom: 6%; left: 7%;  display: flex; flex-direction: column; align-items: center; gap: 4px; z-index: 3; }
+
+#cue-toast {
+  position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
+  background: rgba(20,14,8,.92); color: #d8cdb8;
+  border: 1px solid var(--brass); border-radius: 20px;
+  font-style: italic; font-size: 13.5px; padding: 7px 18px; z-index: 30;
+  pointer-events: none; max-width: 70%;
+}
+
+#ruling-banner {
+  position: absolute; top: 52px; left: 50%; transform: translateX(-50%);
+  font-family: Georgia, serif; font-size: 15px; letter-spacing: .04em;
+  padding: 8px 22px; border-radius: 4px; z-index: 30; max-width: 80%;
+  pointer-events: none;
+}
+#ruling-banner[data-ruling="sustained"] { background: #1e3a26; color: #9fe2b0; border: 1px solid #2f7a45; }
+#ruling-banner[data-ruling="overruled"] { background: #3a1e1e; color: #e2a09f; border: 1px solid #7a2f2f; }

@@ -1,0 +1,63 @@
+/* Shell, palette, screens, title. */
+:root {
+  --wood-dark: #2b1d12;
+  --wood: #4a3320;
+  --wood-light: #6e4e2e;
+  --brass: #c9a25e;
+  --paper: #f3ecdc;
+  --ink: #2a2118;
+  --accent: #8c2f39;
+  --accent-bright: #c0392b;
+  --defense: #3d5a80;
+  --text: #e9e2d4;
+  --muted: #9b9183;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0; padding: 0; height: 100%;
+  background: #17110b;
+  color: var(--text);
+  font-family: "Segoe UI", system-ui, sans-serif;
+}
+
+#app { height: 100%; position: relative; overflow: hidden; }
+
+.screen {
+  position: absolute; inset: 0;
+  display: none;
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(201,162,94,.08), transparent 60%),
+    linear-gradient(180deg, #221709 0%, #17110b 100%);
+}
+.screen.active { display: flex; flex-direction: column; }
+.screen.scrollable { overflow-y: auto; align-items: center; }
+
+.muted { color: var(--muted); font-weight: normal; }
+
+/* ---------- title ---------- */
+#screen-title.active { align-items: center; justify-content: center; }
+.title-card { text-align: center; max-width: 720px; padding: 40px; }
+.title-scales { font-size: 64px; color: var(--brass); text-shadow: 0 0 40px rgba(201,162,94,.4); }
+.title-card h1 {
+  font-family: Georgia, serif; letter-spacing: .35em; margin: 12px 0 4px;
+  font-size: 42px; color: var(--brass);
+}
+.title-card h2 { font-family: Georgia, serif; font-weight: normal; letter-spacing: .15em; margin: 0; color: var(--text); }
+.tagline { color: var(--muted); font-style: italic; margin: 14px 0 30px; }
+
+.title-buttons { display: flex; gap: 14px; justify-content: center; margin-bottom: 26px; }
+.big-btn {
+  background: var(--accent); color: #f4eee6; border: 1px solid rgba(255,255,255,.15);
+  font-size: 17px; padding: 12px 28px; border-radius: 6px; cursor: pointer;
+  font-family: Georgia, serif; letter-spacing: .06em;
+  box-shadow: 0 4px 18px rgba(0,0,0,.5);
+}
+.big-btn:hover { background: var(--accent-bright); }
+.big-btn:disabled { opacity: .4; cursor: default; }
+.big-btn.ghost { background: transparent; border-color: var(--brass); color: var(--brass); }
+
+.title-settings { display: flex; flex-direction: column; gap: 8px; align-items: center; font-size: 14px; color: var(--text); }
+.title-settings select { margin-left: 8px; background: #2a2118; color: var(--text); border: 1px solid #555; border-radius: 4px; padding: 2px 6px; }
+.hint { font-size: 13px; margin-top: 22px; }

@@ -1,0 +1,45 @@
+/* OBJECTION slam, ruling banner, toast, typewriter caret. */
+
+#slam {
+  position: absolute; inset: 0; z-index: 80;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(10,4,2,.55);
+  font-family: Georgia, serif; font-weight: bold;
+  font-size: clamp(48px, 11vw, 130px); letter-spacing: .06em;
+  color: #fff; -webkit-text-stroke: 3px #8c1f1f;
+  text-shadow: 0 0 30px rgba(216,69,58,.9), 6px 6px 0 #4a0e0e;
+  pointer-events: none;
+}
+#slam[data-who="prosecutor"] { -webkit-text-stroke-color: #3d2330; text-shadow: 0 0 30px rgba(122,60,90,.9), 6px 6px 0 #2a1622; }
+
+.slam-anim { animation: slam .9s cubic-bezier(.2, 2.4, .4, 1) both; }
+@keyframes slam {
+  0%   { transform: scale(3.2) rotate(-7deg); opacity: 0; }
+  18%  { transform: scale(1) rotate(-2deg); opacity: 1; }
+  30%  { transform: scale(1.06) rotate(-2deg); }
+  40%  { transform: scale(1) rotate(-2deg); }
+  82%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+.ruling-anim { animation: ruling 2.4s ease both; }
+@keyframes ruling {
+  0% { opacity: 0; transform: translate(-50%, -8px); }
+  12% { opacity: 1; transform: translate(-50%, 0); }
+  84% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+.toast-anim { animation: toast 2.6s ease both; }
+@keyframes toast {
+  0% { opacity: 0; transform: translate(-50%, -10px); }
+  14% { opacity: 1; transform: translate(-50%, 0); }
+  82% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+#dtext.typing::after {
+  content: "▌"; color: var(--brass);
+  animation: caret .8s steps(1) infinite;
+}
+@keyframes caret { 50% { opacity: 0; } }

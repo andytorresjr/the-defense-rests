@@ -1,0 +1,18 @@
+/* Portrait sizing and expression-layer switching. */
+.portrait { display: block; }
+.portrait.small { width: 92px; height: 108px; }
+.portrait.big { width: 130px; height: 152px; }
+.portrait-svg { width: 100%; height: 100%; }
+
+/* Only the active expression layer is visible. */
+.portrait .expr { display: none; }
+.portrait[data-expr="neutral"] .expr-neutral,
+.portrait[data-expr="stressed"] .expr-stressed,
+.portrait[data-expr="angry"] .expr-angry,
+.portrait[data-expr="sad"] .expr-sad { display: inline; }
+
+/* default if unset */
+.portrait:not([data-expr]) .expr-neutral { display: inline; }
+
+#witness-portrait { transition: filter .4s; }
+#stand.occupied #witness-portrait { filter: drop-shadow(0 8px 12px rgba(0,0,0,.55)); }

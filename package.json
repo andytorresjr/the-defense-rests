@@ -1,0 +1,10 @@
+{
+  "name": "the-defense-rests",
+  "version": "1.0.0",
+  "description": "A courtroom trial game. You are defense counsel in State v. Daniel Cross.",
+  "type": "module",
+  "scripts": {
+    "serve": "python -m http.server 8123",
+    "simulate": "node tools/simulate.js"
+  }
+}

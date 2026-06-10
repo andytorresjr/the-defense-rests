@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>The Defense Rests — State v. Daniel Cross</title>
+  <link rel="stylesheet" href="styles/main.css">
+  <link rel="stylesheet" href="styles/courtroom.css">
+  <link rel="stylesheet" href="styles/ui.css">
+  <link rel="stylesheet" href="styles/portraits.css">
+  <link rel="stylesheet" href="styles/animations.css">
+</head>
+<body>
+  <div id="app">
+
+    <div id="screen-title" class="screen"></div>
+
+    <div id="screen-generic" class="screen scrollable"></div>
+
+    <div id="screen-court" class="screen">
+      <header id="topbar">
+        <span id="case-title">STATE v. DANIEL CROSS</span>
+        <span id="phase-label"></span>
+      </header>
+
+      <div id="stage">
+        <div id="bench">
+          <div id="judge-portrait" class="portrait small"></div>
+          <div class="plate">HON. MARION HOLT</div>
+        </div>
+        <div id="jury-box">
+          <div id="jury-strip"></div>
+          <div class="plate">THE JURY</div>
+        </div>
+        <div id="stand">
+          <div id="witness-portrait" class="portrait big"></div>
+          <div id="witness-plate" class="plate"></div>
+        </div>
+        <div id="pros-table">
+          <div id="prosecutor-portrait" class="portrait small"></div>
+          <div class="plate">ADA PIERCE</div>
+        </div>
+        <div id="def-table">
+          <div id="defendant-portrait" class="portrait small"></div>
+          <div class="plate">DANIEL CROSS</div>
+        </div>
+        <div id="cue-toast" hidden></div>
+        <div id="ruling-banner" hidden></div>
+      </div>
+
+      <div id="meters"></div>
+
+      <div id="dialogue">
+        <div id="speaker"></div>
+        <div id="dtext"></div>
+        <button id="continueBtn" hidden>Continue ▸</button>
+      </div>
+
+      <div id="controls">
+        <button id="objectBtn" hidden>OBJECT!</button>
+        <div id="choices"></div>
+        <button id="recordBtn" title="Exhibits and the facts on the record">Court Record</button>
+      </div>
+    </div>
+
+    <div id="slam" hidden></div>
+    <div id="modal-root" hidden></div>
+    <div id="debug-overlay" hidden></div>
+  </div>
+
+  <script type="module" src="src/main.js"></script>
+</body>
+</html>
