@@ -1,6 +1,7 @@
-// Boot + the trial loop: walks the case's trialPlan, routing each step to the
-// courtroom or a full-screen scene, autosaving at every step boundary.
-import { CASE } from './data/cases/state-v-cross/case.js';
+// Boot + the trial loop: case select, then walk the chosen case's trialPlan,
+// routing each step to the courtroom or a full-screen scene, autosaving at
+// every step boundary.
+import { CASES, caseById } from './data/cases/index.js';
 import { createGameState, serialize, deserialize, applyAction } from './engine/state.js';
 import { currentStep, advance } from './engine/phases.js';
 import { updateFocus } from './engine/prosecutor.js';
@@ -23,6 +24,7 @@ function saveSettings(patch) {
   localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
 }
 
+let CASE = null;
 let state = null;
 let courtroom = null;
 const rng = makeRng(Date.now() % 2147483647);
@@ -32,13 +34,22 @@ function autosave() {
 }
 function clearSave() { localStorage.removeItem(SAVE_KEY); }
 
-async function boot() {
-  const hasSave = !!localStorage.getItem(SAVE_KEY);
-  const choice = await screens.showTitle(CASE, { hasSave, settings, onSettingsChange: saveSettings });
+function peekSavedCase() {
+  try {
+    const raw = localStorage.getItem(SAVE_KEY);
+    return raw ? caseById(JSON.parse(raw).caseId) : null;
+  } catch { return null; }
+}
 
-  if (choice === 'continue') {
+async function boot() {
+  const savedCase = peekSavedCase();
+  const choice = await screens.showTitle(CASES, { savedCase, settings, onSettingsChange: saveSettings });
+
+  if (choice.mode === 'continue' && savedCase) {
+    CASE = savedCase;
     state = deserialize(localStorage.getItem(SAVE_KEY), CASE);
   } else {
+    CASE = caseById(choice.caseId);
     state = createGameState(CASE);
     autosave();
   }
@@ -47,7 +58,7 @@ async function boot() {
   initDebug(state, CASE);
   setDebugState(state);
 
-  if (choice !== 'continue') await screens.showBriefing(CASE);
+  if (choice.mode !== 'continue') await screens.showBriefing(CASE);
   await trialLoop();
 }
 
@@ -69,7 +80,7 @@ async function trialLoop() {
 
       case 'phaseBanner': {
         applyAction(state, { type: 'SET_PHASE', phase: step.phase });
-        updateFocus(state);
+        updateFocus(state, CASE);
         const el = document.getElementById('screen-generic');
         el.innerHTML = `<div class="paper banner"><h2>${step.title}</h2><p>${step.sub}</p><button class="big-btn" data-go>Continue</button></div>`;
         el.classList.add('active');
@@ -95,7 +106,6 @@ async function trialLoop() {
       case 'event':
         courtroom.hide();
         await screens.showEvent(state, CASE.events[step.id]);
-        courtroom.show();
         break;
 
       case 'decision':
@@ -116,11 +126,11 @@ async function trialLoop() {
 
       case 'deliberation': {
         applyAction(state, { type: 'SET_PHASE', phase: 'deliberation' });
-        const result = deliberate(state, rng);
+        const result = deliberate(state, CASE, rng);
         // Stash a serializable copy so a refresh during the verdict can't
         // re-roll the jury.
         applyAction(state, { type: 'FLAG', key: 'verdictResult', value: resultToPlain(result) });
-        await screens.runDeliberation(state, result);
+        await screens.runDeliberation(state, CASE, result);
         break;
       }
 
@@ -146,7 +156,7 @@ function resultToPlain(result) {
   return {
     verdict: result.verdict,
     ballots: result.ballots,
-    room: result.room.map(r => ({ jurorId: r.juror.id, stance: r.stance, flipped: r.flipped, killing: r.killing, malice: r.malice, dt: r.dt })),
+    room: result.room.map(r => ({ jurorId: r.juror.id, stance: r.stance, flipped: r.flipped, act: r.act, mensRea: r.mensRea, dt: r.dt })),
   };
 }
 

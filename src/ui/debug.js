@@ -25,16 +25,16 @@ export function setDebugState(s) { state = s; }
 function render() {
   const el = document.getElementById('debug-overlay');
   if (!state) return;
+  const issues = caseData.issues;
   const jury = state.jury.length ? `
     <table>
-      <tr><th>Juror</th><th>arch</th><th>id</th><th>tl</th><th>in</th><th>wp</th><th>alt</th><th>kill</th><th>dt</th></tr>
+      <tr><th>Juror</th><th>arch</th>${issues.map(i => `<th>${i.slice(0, 4)}</th>`).join('')}<th>act</th><th>dt</th></tr>
       ${state.jury.map(j => {
-        const e = elementBeliefs(j);
+        const e = elementBeliefs(j, caseData);
         const b = j.beliefs;
         return `<tr><td>${j.name}</td><td>${j.archetype}</td>
-          <td>${b.identity.toFixed(2)}</td><td>${b.timeline.toFixed(2)}</td><td>${b.intent.toFixed(2)}</td>
-          <td>${b.weapon.toFixed(2)}</td><td>${b.altSuspect.toFixed(2)}</td>
-          <td><b>${e.killing.toFixed(2)}</b></td><td>${j.doubtThreshold}</td></tr>`;
+          ${issues.map(i => `<td>${(b[i] ?? 0.5).toFixed(2)}</td>`).join('')}
+          <td><b>${e.act.toFixed(2)}</b></td><td>${j.doubtThreshold}</td></tr>`;
       }).join('')}
     </table>` : '<p>(no jury seated)</p>';
 

@@ -21,6 +21,34 @@ export const CASE = {
     lesser: 'Voluntary Manslaughter',
     elementsBlurb: 'The State must prove beyond a reasonable doubt that Daniel Cross killed Marcus Webb, and that he did so with malice — not in a sudden quarrel.',
   },
+  issues: ['identity', 'timeline', 'intent', 'weapon', 'altSuspect'],
+  defendant: {
+    name: 'Daniel Cross',
+    portrait: { skin: '#caa284', hair: 'short', hairColor: '#4d4339', outfit: 'suit' },
+  },
+  verdictModel: {
+    // The "act" element (killing-by-defendant) and the mens-rea issue.
+    act: { identity: 0.45, timeline: 0.25, weapon: 0.15, altSuspect: 0.15 },
+    mensRea: 'intent',
+    verdicts: {
+      TOP: {
+        label: 'GUILTY — MURDER IN THE SECOND DEGREE', short: 'Murder 2', cls: 'v-m2',
+        epilogue: 'Twenty-five to life. As they take Daniel Cross away he looks back at you once, and you will spend a long time deciding what was in that look. The record you made is the record they judged. It was not enough.',
+      },
+      LESSER: {
+        label: 'GUILTY — VOLUNTARY MANSLAUGHTER', short: 'Manslaughter', cls: 'v-man',
+        epilogue: 'The jury could not let go of that lot — but they did not believe in an ambush. Eight to fifteen years. Daniel squeezes your shoulder before they take him back: "You made them see most of it," he says. Most of it.',
+      },
+      NG: {
+        label: 'NOT GUILTY', short: 'Not guilty', cls: 'v-ng',
+        epilogue: 'Daniel Cross walks out of the courthouse into the gray afternoon a free man. Nobody was ever tried again for the killing of Marcus Webb. You built the record; the record was enough. Whether it was the truth — only that parking lot knows.',
+      },
+      HUNG: {
+        label: 'MISTRIAL — HUNG JURY', short: 'Hung', cls: 'v-hung',
+        epilogue: 'After two days the foreperson reports a hopeless deadlock, and Judge Holt declares a mistrial. The State announces it will retry. You bought Daniel Cross time — and a preview of every card the prosecution holds. It is not a win. It is not a loss. It is the law.',
+      },
+    },
+  },
   briefing: [
     'Marcus Webb, 41, was found stabbed once in the chest behind the Anchor Bar at 11:41 PM.',
     'Your client, Daniel Cross, argued with Webb that night over a $30,000 debt and told police he "walked straight home" at 11:30 — but the bar’s camera shows him at the alley entrance at 11:42.',

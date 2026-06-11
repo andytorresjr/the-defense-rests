@@ -43,7 +43,7 @@ export function applyClosingThemes(state, caseData, themeIds) {
 }
 
 export function applyProsecutionClosing(state, caseData) {
-  const focus = updateFocus(state) || 'identity';
+  const focus = updateFocus(state, caseData) || caseData.issues[0];
   const closing = caseData.arguments.PROSECUTION_CLOSINGS[focus];
   applyAction(state, { type: 'JUROR_ADJUST', deltas: closing.deltas, reason: `prosecution closing: ${focus}` });
   return { focus, closing };

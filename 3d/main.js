@@ -1,6 +1,6 @@
-// Boot + trial loop for the cinematic 3D version. Same engine, same case,
-// same trial plan as the classic game — different stagecraft.
-import { CASE } from '../src/data/cases/state-v-cross/case.js';
+// Boot + trial loop for the cinematic 3D edition. Same engine, same cases,
+// same trial plans as the classic game — different stagecraft.
+import { CASES, caseById } from '../src/data/cases/index.js';
 import { createGameState, serialize, deserialize, applyAction } from '../src/engine/state.js';
 import { currentStep, advance } from '../src/engine/phases.js';
 import { updateFocus } from '../src/engine/prosecutor.js';
@@ -25,6 +25,7 @@ function saveSettings(patch) {
   localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
 }
 
+let CASE = null;
 let state = null;
 let courtroom = null;
 const rng = makeRng(Date.now() % 2147483647);
@@ -35,13 +36,22 @@ function autosave() {
 }
 function clearSave() { localStorage.removeItem(SAVE_KEY); }
 
-async function boot() {
-  const hasSave = !!localStorage.getItem(SAVE_KEY);
-  const choice = await screens.showTitle(CASE, { hasSave, settings, onSettingsChange: saveSettings });
+function peekSavedCase() {
+  try {
+    const raw = localStorage.getItem(SAVE_KEY);
+    return raw ? caseById(JSON.parse(raw).caseId) : null;
+  } catch { return null; }
+}
 
-  if (choice === 'continue') {
+async function boot() {
+  const savedCase = peekSavedCase();
+  const choice = await screens.showTitle(CASES, { savedCase, settings, onSettingsChange: saveSettings });
+
+  if (choice.mode === 'continue' && savedCase) {
+    CASE = savedCase;
     state = deserialize(localStorage.getItem(SAVE_KEY), CASE);
   } else {
+    CASE = caseById(choice.caseId);
     state = createGameState(CASE);
     autosave();
   }
@@ -50,7 +60,7 @@ async function boot() {
   initDebug(state, CASE);
   setDebugState(state);
 
-  if (choice !== 'continue') await screens.showBriefing(CASE);
+  if (choice.mode !== 'continue') await screens.showBriefing(CASE);
   await trialLoop();
 }
 
@@ -72,7 +82,7 @@ async function trialLoop() {
 
       case 'phaseBanner': {
         applyAction(state, { type: 'SET_PHASE', phase: step.phase });
-        updateFocus(state);
+        updateFocus(state, CASE);
         playGavel(2);
         const el = document.getElementById('screen-generic');
         el.innerHTML = `<div class="title-card-cine"><h2>${step.title}</h2><p>${step.sub}</p><button class="big-btn" data-go>Continue</button></div>`;
@@ -99,7 +109,6 @@ async function trialLoop() {
       case 'event':
         courtroom.hide();
         await screens.showEvent(state, CASE.events[step.id]);
-        courtroom.show();
         break;
 
       case 'decision':
@@ -121,9 +130,9 @@ async function trialLoop() {
       case 'deliberation': {
         applyAction(state, { type: 'SET_PHASE', phase: 'deliberation' });
         courtroom.hide();
-        const result = deliberate(state, rng);
+        const result = deliberate(state, CASE, rng);
         applyAction(state, { type: 'FLAG', key: 'verdictResult', value: resultToPlain(result) });
-        await screens.runDeliberation(state, result);
+        await screens.runDeliberation(state, CASE, result);
         break;
       }
 
@@ -150,7 +159,7 @@ function resultToPlain(result) {
   return {
     verdict: result.verdict,
     ballots: result.ballots,
-    room: result.room.map(r => ({ jurorId: r.juror.id, stance: r.stance, flipped: r.flipped, killing: r.killing, malice: r.malice, dt: r.dt })),
+    room: result.room.map(r => ({ jurorId: r.juror.id, stance: r.stance, flipped: r.flipped, act: r.act, mensRea: r.mensRea, dt: r.dt })),
   };
 }
 
@@ -166,6 +175,7 @@ function rebuildResult(state) {
 // ?preview=<shot> boots straight into a posed courtroom frame — used for
 // visual debugging and screenshots without clicking through the game.
 async function preview(shotName) {
+  CASE = CASES[0];
   state = createGameState(CASE);
   applyAction(state, { type: 'SEAT_JURY', jurors: CASE.jurorPool.slice(0, 12) });
   courtroom = new Courtroom3D(state, CASE, settings, rng, courtScene);

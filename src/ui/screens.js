@@ -27,18 +27,25 @@ function waitClick(el, selector) {
   });
 }
 
-// ---------- title ----------
-export function showTitle(caseData, { hasSave, settings, onSettingsChange }) {
+// ---------- title + case select ----------
+export function showTitle(cases, { savedCase, settings, onSettingsChange }) {
   const el = document.getElementById('screen-title');
   el.innerHTML = `
     <div class="title-card">
       <div class="title-scales">⚖</div>
       <h1>THE DEFENSE RESTS</h1>
-      <h2>${caseData.title}</h2>
-      <p class="tagline">${caseData.tagline}</p>
+      <p class="tagline">Two cases. Twelve jurors each. The record you build is all there is.</p>
       <div class="title-buttons">
         <button id="btn-new" class="big-btn">New Trial</button>
-        ${hasSave ? '<button id="btn-continue" class="big-btn ghost">Continue</button>' : ''}
+        ${savedCase ? `<button id="btn-continue" class="big-btn ghost">Continue — ${savedCase.title}</button>` : ''}
+      </div>
+      <div id="case-select" class="case-select" hidden>
+        ${cases.map(c => `
+          <button class="theme-card case-card" data-id="${c.id}">
+            <strong>${c.title}</strong>
+            <em>${c.charge.name} · lesser included: ${c.charge.lesser}</em>
+            <p>${c.tagline}</p>
+          </button>`).join('')}
       </div>
       <div class="title-settings">
         <label><input type="checkbox" id="set-deliberate" ${settings.deliberateMode ? 'checked' : ''}>
@@ -60,8 +67,18 @@ export function showTitle(caseData, { hasSave, settings, onSettingsChange }) {
   el.querySelector('#set-speed').addEventListener('change', e => onSettingsChange({ textSpeed: Number(e.target.value) }));
 
   return new Promise(resolve => {
-    el.querySelector('#btn-new').addEventListener('click', () => { el.classList.remove('active'); resolve('new'); });
-    el.querySelector('#btn-continue')?.addEventListener('click', () => { el.classList.remove('active'); resolve('continue'); });
+    el.querySelector('#btn-new').addEventListener('click', () => {
+      const sel = el.querySelector('#case-select');
+      sel.hidden = !sel.hidden;
+    });
+    el.querySelectorAll('.case-card').forEach(b => b.addEventListener('click', () => {
+      el.classList.remove('active');
+      resolve({ mode: 'new', caseId: b.dataset.id });
+    }));
+    el.querySelector('#btn-continue')?.addEventListener('click', () => {
+      el.classList.remove('active');
+      resolve({ mode: 'continue' });
+    });
   });
 }
 
@@ -242,7 +259,8 @@ export async function runClosings(state, caseData) {
 }
 
 // ---------- deliberation ----------
-export async function runDeliberation(state, result) {
+export async function runDeliberation(state, caseData, result) {
+  const labels = caseData.verdictModel.verdicts;
   const el = showScreen(`
     <div class="paper deliberation">
       <h2>The jury is out</h2>
@@ -256,9 +274,9 @@ export async function runDeliberation(state, result) {
     area.insertAdjacentHTML('beforeend', `
       <div class="ballot">
         <span class="muted">Ballot ${i + 1}</span>
-        <span class="b-m2" style="flex:${b.M2}">${b.M2 ? `Murder 2: ${b.M2}` : ''}</span>
-        <span class="b-man" style="flex:${b.MAN}">${b.MAN ? `Manslaughter: ${b.MAN}` : ''}</span>
-        <span class="b-ng" style="flex:${b.NG}">${b.NG ? `Not guilty: ${b.NG}` : ''}</span>
+        <span class="b-m2" style="flex:${b.TOP}">${b.TOP ? `${labels.TOP.short}: ${b.TOP}` : ''}</span>
+        <span class="b-man" style="flex:${b.LESSER}">${b.LESSER ? `${labels.LESSER.short}: ${b.LESSER}` : ''}</span>
+        <span class="b-ng" style="flex:${b.NG}">${b.NG ? `${labels.NG.short}: ${b.NG}` : ''}</span>
       </div>`);
   }
   const btn = el.querySelector('[data-go]');
@@ -268,25 +286,20 @@ export async function runDeliberation(state, result) {
 }
 
 // ---------- verdict ----------
-const VERDICT_TEXT = {
-  NG: { head: 'NOT GUILTY', cls: 'v-ng', epilogue: 'Daniel Cross walks out of the courthouse into the gray afternoon a free man. Nobody was ever tried again for the killing of Marcus Webb. You built the record; the record was enough. Whether it was the truth — only that parking lot knows.' },
-  MAN: { head: 'GUILTY — VOLUNTARY MANSLAUGHTER', cls: 'v-man', epilogue: 'The jury could not let go of that lot — but they did not believe in an ambush. Eight to fifteen years. Daniel squeezes your shoulder before they take him back: "You made them see most of it," he says. Most of it.' },
-  M2: { head: 'GUILTY — MURDER IN THE SECOND DEGREE', cls: 'v-m2', epilogue: 'Twenty-five to life. As they take Daniel Cross away he looks back at you once, and you will spend a long time deciding what was in that look. The record you made is the record they judged. It was not enough.' },
-  HUNG: { head: 'MISTRIAL — HUNG JURY', cls: 'v-hung', epilogue: 'After two days the foreperson reports a hopeless deadlock, and Judge Holt declares a mistrial. The State announces it will retry. You bought Daniel Cross time — and a preview of every card the prosecution holds. It is not a win. It is not a loss. It is the law.' },
-};
+const STANCE_CLS = { TOP: 's-m2', LESSER: 's-man', NG: 's-ng' };
 
 export async function showVerdict(state, caseData, result) {
-  const v = VERDICT_TEXT[result.verdict];
+  const v = caseData.verdictModel.verdicts[result.verdict];
+  const labels = caseData.verdictModel.verdicts;
   const rows = result.room.map(r => {
     const kf = keyFactFor(state, caseData, r);
-    const stanceLabel = { NG: 'Not guilty', MAN: 'Manslaughter', M2: 'Murder 2' }[r.stance];
     const why = kf.fact ? `couldn’t get past: “${kf.fact.text}”` : 'went with the room';
-    return `<li><b>${r.juror.name}</b> <span class="stance s-${r.stance.toLowerCase()}">${stanceLabel}</span>${r.flipped ? ' <em>(moved during deliberation)</em>' : ''}<br><span class="muted">${why}</span></li>`;
+    return `<li><b>${r.juror.name}</b> <span class="stance ${STANCE_CLS[r.stance]}">${labels[r.stance].short}</span>${r.flipped ? ' <em>(moved during deliberation)</em>' : ''}<br><span class="muted">${why}</span></li>`;
   }).join('');
 
   const el = showScreen(`
     <div class="paper verdict">
-      <h2 class="verdict-head ${v.cls}">${v.head}</h2>
+      <h2 class="verdict-head ${v.cls}">${v.label}</h2>
       <p class="epilogue">${v.epilogue}</p>
       <h3>Inside the jury room</h3>
       <ol class="juror-breakdown">${rows}</ol>

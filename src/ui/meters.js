@@ -3,6 +3,7 @@
 // defense, warm = with the State).
 import { elementBeliefs } from '../engine/jury.js';
 import { patienceLabel } from '../engine/judge.js';
+import { getActiveCase } from '../engine/state.js';
 
 export function renderMeters(state, witnessData) {
   const el = document.getElementById('meters');
@@ -32,8 +33,9 @@ function composureLabel(c) {
 export function renderJuryStrip(state) {
   const el = document.getElementById('jury-strip');
   if (!state.jury.length) { el.innerHTML = ''; return; }
+  const caseData = getActiveCase();
   el.innerHTML = state.jury.map(j => {
-    const k = elementBeliefs(j).killing;
+    const k = elementBeliefs(j, caseData).act;
     // 210 (cool blue, defense) -> 8 (hot red, prosecution)
     const hue = Math.round(210 - k * 200);
     return `<span class="juror-dot" title="Juror: ${j.name}" style="background:hsl(${hue} 45% 52%)"></span>`;

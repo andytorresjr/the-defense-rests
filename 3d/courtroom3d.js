@@ -10,6 +10,7 @@ export class Courtroom3D extends Courtroom {
     super(state, caseData, settings, rng);
     this.scene3d = courtScene;
     this._jurySeated = false;
+    if (caseData.defendant) this.scene3d.setDefendant(caseData.defendant.portrait);
 
     // The player's objection click gets a camera cut + point pose too.
     document.getElementById('objectBtn').addEventListener('click', () => {

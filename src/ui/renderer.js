@@ -48,7 +48,10 @@ export class Courtroom {
 
     mountPortrait(this.els.judge, FIXED_CHARACTERS.judge.spec);
     mountPortrait(this.els.prosecutor, FIXED_CHARACTERS.prosecutor.spec);
-    mountPortrait(this.els.defendant, FIXED_CHARACTERS.defendant.spec);
+    mountPortrait(this.els.defendant, caseData.defendant?.portrait ?? FIXED_CHARACTERS.defendant.spec);
+    document.getElementById('case-title').textContent = caseData.title;
+    const defPlate = document.querySelector('#def-table .plate');
+    if (defPlate && caseData.defendant) defPlate.textContent = caseData.defendant.name.toUpperCase();
 
     this.els.objectBtn.addEventListener('click', () => this.player.requestObjection());
     this.els.recordBtn.addEventListener('click', async () => {
@@ -80,13 +83,14 @@ export class Courtroom {
     // Jury-swing feedback: surfaced as a quiet narrator toast.
     if (this.state.jury.length) {
       const means = meanBeliefs(this.state);
-      const killing = 0.45 * means.identity + 0.25 * means.timeline + 0.15 * means.weapon + 0.15 * means.altSuspect;
-      if (this._lastKilling != null && Math.abs(killing - this._lastKilling) > 0.018) {
-        this.toast(killing > this._lastKilling
+      let act = 0;
+      for (const [iss, w] of Object.entries(this.caseData.verdictModel.act)) act += (means[iss] ?? 0.5) * w;
+      if (this._lastKilling != null && Math.abs(act - this._lastKilling) > 0.018) {
+        this.toast(act > this._lastKilling
           ? 'The jury leans toward the State.'
           : 'Doubt spreads through the jury box.');
       }
-      this._lastKilling = killing;
+      this._lastKilling = act;
     }
   }
 

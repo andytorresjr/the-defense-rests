@@ -214,6 +214,20 @@ export class CourtScene {
     }
   }
 
+  setDefendant(portraitSpec) {
+    if (!portraitSpec) return;
+    const pos = this.defendant.group.position.clone();
+    const rot = this.defendant.group.rotation.y;
+    this.scene.remove(this.defendant.group);
+    this.people.splice(this.people.indexOf(this.defendant), 1);
+    const p = makePerson({ ...portraitSpec, seated: true });
+    p.group.position.copy(pos);
+    p.group.rotation.y = rot;
+    this.scene.add(p.group);
+    this.people.push(p);
+    this.defendant = p;
+  }
+
   setJury(jurors) {
     for (const p of this.jurors) {
       this.scene.remove(p.group);

@@ -1,8 +1,18 @@
 # The Defense Rests — *State v. Daniel Cross*
 
-A courtroom trial game in the browser. You are defense counsel in a murder case
-that can actually be won or lost — every input you make feeds a live model of
+A courtroom trial game in the browser. You are defense counsel in cases that
+can actually be won or lost — every input you make feeds a live model of
 twelve jurors, a judge, and an adapting prosecutor.
+
+**Two cases, selectable from the title screen:**
+
+- ***State v. Daniel Cross*** — murder 2 (lesser: voluntary manslaughter). An
+  eyewitness who never saw a face, a knife from a dumpster, and a bar camera
+  whose clock is not what it seems.
+- ***State v. Mara Vance*** — arson 1 (lesser: reckless burning). A drowning
+  restaurant, a doubled policy, a fire marshal reading "pour patterns" from a
+  forensic playbook modern science buried — and an alarm-panel log he never
+  pulled.
 
 **Two editions, one game:**
 
@@ -75,8 +85,11 @@ tools/        simulate.js — headless balance simulator
 
 All state changes flow through `applyAction()` in `src/engine/state.js`;
 jury beliefs are recomputed from the record, so strikes and impeachment are
-retroactive. The engine never references this case's specifics — add a new
-folder under `src/data/cases/` to add a case.
+retroactive. The engine never references any case's specifics: each case
+declares its contested issues, a `verdictModel` (how issues map onto the
+act/mens-rea elements, and the verdict labels), its witnesses, exhibits,
+juror pool, and trial plan. Add a folder under `src/data/cases/` and list it
+in `src/data/cases/index.js` to add a case.
 
 ## Balance harness
 
