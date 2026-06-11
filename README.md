@@ -49,6 +49,10 @@ a hung jury — all computed from the record you actually build.
   for it.
 - **Direct examination.** In the defense case you may not lead your own
   witness — the prosecutor is listening.
+- **Redirect.** After the prosecutor cross-examines your witness, the judge
+  asks: "Any redirect, counsel?" Take it to repair what the cross broke
+  (rehabilitation only unlocks where the cross actually drew blood) — or
+  waive it. Re-asking settled questions invites asked-and-answered.
 - **Closings.** Your summation is assembled from themes the record supports.
   Arguing past your evidence backfires.
 - **The verdict is explained.** Juror by juror, with the fact each one

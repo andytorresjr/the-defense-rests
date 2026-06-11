@@ -54,6 +54,29 @@ export default {
     },
   },
 
+  // Redirect: offered after the prosecutor's cross. Repair the damage — briefly.
+  playerRedirect: {
+    start: ['r_c_news', 'r_c_sure'],
+    nodes: {
+      r_c_news: {
+        text: 'Ms. Cruz — the prosecutor says you never checked a clock. You mentioned the late news. Why does that fix the time in your mind?',
+        style: 'probe',
+        requires: { facts: ['f_cruz_noclock'] },
+        answer: {
+          text: 'The Channel 9 late news theme was coming through the Riveras’ window just as Danny reached the steps. That broadcast starts at 11:45. Sharp. Every night for thirty years. I suppose I did set my watch by it.',
+          facts: ['f_cruz_news'],
+        },
+      },
+      r_c_sure: {
+        // Tempting but empty: re-asking the settled question invites asked-and-answered.
+        text: 'And you remain certain it was Daniel you saw that night?',
+        style: 'soft',
+        risk: { ground: 'asked', chance: 0.65, sustainChance: 0.75 },
+        answer: { text: 'Of course it was Danny. I’ve known him eight years.' },
+      },
+    },
+  },
+
   // The prosecutor's cross — the player may object to HER questions now.
   scriptedCross: [
     { id: 'c_x1', speaker: 'prosecutor', text: 'Ms. Cruz. "Around quarter to twelve." You didn’t actually look at a clock, did you?' },

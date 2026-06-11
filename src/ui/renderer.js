@@ -288,6 +288,24 @@ export class Courtroom {
       applyAction(state, { type: 'SET_EXAM_MODE', examMode: 'cross' });
       await this.narrate('Cross-examination by the People. You may object to her questions.');
       await this.runScriptedExam(witnessData, resolveScript(state, witnessData.scriptedCross));
+
+      // The option to redirect: rehabilitate your witness after the cross.
+      if (witnessData.playerRedirect
+        && availableQuestions(state, witnessData, witnessData.playerRedirect).some(a => a.enabled)) {
+        await this.playBeats([{ speaker: 'judge', kind: 'ruling', text: 'Any redirect, counsel?' }]);
+        const wants = await new Promise(resolve => {
+          this.els.choices.innerHTML = `
+            <button class="choice util" data-act="yes"><span class="chip">Redirect</span><span>Briefly, Your Honor.</span></button>
+            <button class="choice util" data-act="no"><span class="chip">Waive</span><span>Nothing further, Your Honor.</span></button>`;
+          this.els.choices.querySelectorAll('button').forEach(b =>
+            b.addEventListener('click', () => { this.els.choices.innerHTML = ''; resolve(b.dataset.act === 'yes'); }));
+        });
+        if (wants) {
+          applyAction(state, { type: 'SET_EXAM_MODE', examMode: 'redirect' });
+          await this.runPlayerExam(witnessData, witnessData.playerRedirect,
+            { modeLabel: 'Redirect examination. Repair the damage — briefly, and only where the cross drew blood.' });
+        }
+      }
     }
 
     applyAction(state, { type: 'EXCUSE_WITNESS', id: witnessData.id });

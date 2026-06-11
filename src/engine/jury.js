@@ -87,8 +87,8 @@ export function deliberate(state, rng) {
       r.malice += (mm - r.malice) * pull + jitter;
       // Normative pressure: a holdout's insistence on the margin erodes —
       // "is my doubt really reasonable?" — capped, and slower for firm jurors.
-      const erosion = (1 - r.juror.firmness) * 0.014 * marginPull;
-      r.dt = Math.max(r.juror.doubtThreshold - 0.07, r.dt - erosion);
+      const erosion = (1 - r.juror.firmness) * 0.018 * marginPull;
+      r.dt = Math.max(r.juror.doubtThreshold - 0.085, r.dt - erosion);
       const next = stanceFromValues(r, r.killing, r.malice);
       if (next !== r.stance) { r.stance = next; r.flipped = true; }
     }

@@ -48,6 +48,31 @@ export default {
     },
   },
 
+  // Redirect: a short chance to pick him back up off the floor.
+  playerRedirect: {
+    start: ['r_d_prior', 'r_d_footage'],
+    nodes: {
+      r_d_prior: {
+        text: 'Daniel — nine years ago. Tell the jury what you did about it.',
+        style: 'soft',
+        requires: { facts: ['f_cross_prior'] },
+        answer: {
+          text: 'I pleaded guilty because I was guilty. I paid the fine, I took the anger-management course — every session, you can check — and I have not raised a hand to anyone since. I was twenty-six and stupid. I’m not that man.',
+          facts: ['f_prior_context'],
+        },
+      },
+      r_d_footage: {
+        text: 'The camera, Daniel. Is there anything else you can tell this jury about it?',
+        style: 'soft',
+        requires: { facts: ['f_cross_cold_footage'] },
+        answer: {
+          text: '…Only what I know. I left at 11:30. I walked past that alley like I have a thousand nights. I never went in. I can’t explain a machine. I can only tell you what I did.',
+          facts: ['f_cross_insists'],
+        },
+      },
+    },
+  },
+
   scriptedCross: [
     { id: 'd_x1', speaker: 'prosecutor', text: 'Mr. Cross. You told Detective Alvarez you "walked straight home" and were never near that lot. The camera puts you at the mouth of it at 11:42. You lied, didn’t you?' },
     {

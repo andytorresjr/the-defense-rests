@@ -229,4 +229,18 @@ export const FACTS = {
     text: 'The prosecutor\'s accusation — "you waited for him in the dark" — hung in the air over a flustered denial.',
     channel: 'emotion', w: { intent: 0.06, identity: 0.04 },
   },
+
+  // ---- Redirect examination (rehabilitating your own witnesses) ----
+  f_cruz_news: {
+    text: 'Cruz anchored her timing to the Channel 9 late news theme — a broadcast that starts at 11:45 sharp, every night.',
+    channel: 'lay', w: { timeline: -0.05 },
+  },
+  f_prior_context: {
+    text: 'Cross pleaded guilty to the nine-year-old charge, paid, completed anger-management, and has stayed clean since.',
+    channel: 'lay', w: { intent: -0.04 },
+  },
+  f_cross_insists: {
+    text: 'Given a last chance on redirect, Cross simply repeated it, quieter: "I left at 11:30. I never went in that lot."',
+    channel: 'emotion', w: { timeline: -0.03 },
+  },
 };

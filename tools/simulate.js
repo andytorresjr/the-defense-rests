@@ -35,6 +35,7 @@ const PROFILES = {
       cruz: ['d_c_who', 'd_c_open', 'd_c_walk', 'd_c_demeanor'],
       daniel: [],
     },
+    redirectPlans: { cruz: ['r_c_news'] },
     callDefendant: false,
     closings: ['cl_clock', 'cl_face', 'cl_lenny'],
   },
@@ -56,6 +57,7 @@ const PROFILES = {
       cruz: ['d_c_who', 'd_c_open', 'd_c_demeanor'],
       daniel: [],
     },
+    redirectPlans: { cruz: ['r_c_news'] },
     callDefendant: false,
     closings: ['cl_invitation', 'cl_struggle', 'cl_burden'],
   },
@@ -85,6 +87,7 @@ const PROFILES = {
       cruz: ['d_c_leading', 'd_c_open'],
       daniel: ['d_d_account'],
     },
+    redirectPlans: { cruz: ['r_c_sure'], daniel: ['r_d_prior'] },
     callDefendant: true,
     closings: ['cl_character', 'cl_burden'],
   },
@@ -148,6 +151,11 @@ function runWitness(state, w, profile, rng, counters) {
     runPlayerExam(state, w, w.playerDirect, profile.crossPlans[w.id] || [], rng, counters);
     applyAction(state, { type: 'SET_EXAM_MODE', examMode: 'cross' });
     runScriptedBeats(state, resolveScript(state, w.scriptedCross), w.id, profile, rng, counters);
+    const redirectPlan = profile.redirectPlans?.[w.id];
+    if (redirectPlan?.length && w.playerRedirect) {
+      applyAction(state, { type: 'SET_EXAM_MODE', examMode: 'redirect' });
+      runPlayerExam(state, w, w.playerRedirect, redirectPlan, rng, counters);
+    }
   }
   applyAction(state, { type: 'EXCUSE_WITNESS', id: w.id });
 }
