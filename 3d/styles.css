@@ -1,0 +1,166 @@
+/* Cinematic 3D edition — overrides layered on the base stylesheets.
+   The 3D canvas is a fixed background; every screen floats over it as
+   translucent console-style panels. */
+
+#court3d {
+  position: fixed; inset: 0; width: 100%; height: 100%;
+  z-index: 0; display: block;
+}
+
+#vignette {
+  position: fixed; inset: 0; z-index: 1; pointer-events: none;
+  background: radial-gradient(ellipse at center, transparent 62%, rgba(0,0,0,.4) 100%);
+}
+
+#app { position: relative; z-index: 2; }
+
+/* screens become transparent overlays over the 3D room */
+.screen { background: transparent; }
+#screen-title.active {
+  background: linear-gradient(180deg, rgba(8,5,2,.55), rgba(8,5,2,.25) 40%, rgba(8,5,2,.65));
+}
+#screen-generic.active { background: rgba(5,3,1,.45); backdrop-filter: blur(2px); }
+
+.stage-stub { display: none !important; }
+
+/* ---------- letterbox + HUD ---------- */
+#letterbox-top, #letterbox-bottom {
+  position: absolute; left: 0; right: 0; height: 5.5vh; background: #000; z-index: 5;
+  pointer-events: none;
+}
+#letterbox-top { top: 0; }
+#letterbox-bottom { bottom: 0; }
+
+#screen-court { background: transparent; }
+#screen-court #topbar {
+  position: absolute; top: 5.5vh; left: 0; right: 0; z-index: 6;
+  background: linear-gradient(180deg, rgba(10,6,2,.85), transparent);
+  border-bottom: none;
+  font-size: 13px;
+}
+
+#stand {
+  position: absolute; top: calc(5.5vh + 40px); left: 18px; right: auto; bottom: auto;
+  transform: none; z-index: 6;
+  display: none;
+}
+#stand.occupied::after { display: none; }
+#stand.occupied { display: block; }
+#stand #witness-portrait { display: none; }
+#stand .plate {
+  background: rgba(15,10,5,.85); font-size: 11px; padding: 5px 12px;
+  border-radius: 14px;
+}
+
+#jury-strip {
+  position: absolute; top: calc(5.5vh + 40px); right: 18px; z-index: 6;
+  display: grid; grid-template-columns: repeat(6, 13px); gap: 5px;
+  background: rgba(15,10,5,.7); padding: 8px; border-radius: 8px;
+  border: 1px solid rgba(201,162,94,.35);
+}
+#jury-strip .juror-dot { width: 13px; height: 13px; }
+#jury-strip:empty { display: none; }
+
+#meters {
+  position: absolute; top: calc(5.5vh + 96px); right: 18px; z-index: 6;
+  flex-direction: column; gap: 6px; width: 250px;
+  background: rgba(15,10,5,.7); border: 1px solid rgba(201,162,94,.25);
+  border-radius: 8px; padding: 8px 12px;
+}
+#meters .meter-note { width: 74px; }
+
+/* ---------- console dialogue box ---------- */
+#dialogue {
+  position: absolute; bottom: calc(5.5vh + 88px); left: 50%; transform: translateX(-50%);
+  width: min(880px, 86vw); z-index: 7;
+  background: linear-gradient(180deg, rgba(18,12,7,.93), rgba(10,7,4,.93));
+  border: 1px solid rgba(201,162,94,.55); border-radius: 10px;
+  box-shadow: 0 14px 50px rgba(0,0,0,.65);
+  min-height: 88px; padding: 12px 22px 16px;
+}
+#dtext { font-size: 18px; min-height: 48px; }
+#speaker {
+  display: inline-block; margin-top: -24px; margin-bottom: 8px;
+  background: rgba(20,13,7,.95); border: 1px solid rgba(201,162,94,.55);
+  border-radius: 6px; padding: 3px 14px;
+}
+
+#controls {
+  position: absolute; bottom: 5.5vh; left: 0; right: 0; z-index: 7;
+  background: transparent; min-height: 72px;
+  display: flex; align-items: flex-end; justify-content: center; gap: 14px;
+  padding: 0 24px 10px;
+  pointer-events: none;
+}
+#controls > * { pointer-events: auto; }
+
+#objectBtn {
+  position: absolute; right: 4vw; bottom: calc(5.5vh + 30px);
+  width: 128px; height: 128px; border-radius: 50%;
+  font-size: 19px; padding: 0;
+  border-width: 4px;
+  box-shadow: 0 0 0 6px rgba(140,31,31,.25), 0 10px 30px rgba(0,0,0,.7);
+}
+
+#choices {
+  max-width: 760px; max-height: 34vh;
+  background: rgba(12,8,4,.9); border: 1px solid rgba(201,162,94,.35);
+  border-radius: 10px; padding: 10px;
+}
+#choices:empty { display: none; }
+
+#recordBtn {
+  position: absolute; left: 4vw; bottom: calc(5.5vh + 30px);
+  background: rgba(15,10,5,.85);
+}
+
+#cue-toast { z-index: 8; top: calc(5.5vh + 14px); }
+#ruling-banner { z-index: 8; top: calc(5.5vh + 52px); }
+
+/* ---------- dark glass panels replace the paper screens ---------- */
+.paper, .voirdire {
+  background: rgba(14,10,6,.88); color: var(--text);
+  border: 1px solid rgba(201,162,94,.4);
+  backdrop-filter: blur(6px);
+  box-shadow: 0 24px 80px rgba(0,0,0,.8);
+}
+.paper h2, .voirdire h2 { border-bottom-color: var(--brass); color: var(--brass); }
+.paper.note { background: rgba(26,20,8,.92); transform: none; }
+.paper blockquote { border-left-color: var(--brass); color: #d8cdb8; }
+
+.theme-card, .juror-card {
+  background: rgba(28,20,12,.92); color: var(--text); border-color: #4a3320;
+}
+.theme-card em, .juror-card em { color: var(--muted); }
+.juror-card p { color: #b6ab97; }
+.theme-card:hover:not(.locked), .juror-card:hover { border-color: var(--brass); }
+.theme-card.picked { background: rgba(60,30,24,.92); border-color: var(--accent-bright); }
+
+/* ---------- cinematic phase title card ---------- */
+.title-card-cine {
+  height: 100%; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; text-align: center;
+  animation: cineFade 1.2s ease both;
+}
+.title-card-cine h2 {
+  font-family: Georgia, serif; color: var(--brass);
+  font-size: clamp(34px, 6vw, 64px); letter-spacing: .3em; margin: 0;
+  text-shadow: 0 0 40px rgba(201,162,94,.35);
+}
+.title-card-cine p { color: var(--muted); max-width: 560px; font-size: 15px; }
+@keyframes cineFade {
+  from { opacity: 0; transform: scale(.97); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* ---------- title screen tweaks ---------- */
+.title-card h1 { font-size: clamp(34px, 5vw, 52px); }
+.title-card { background: transparent; }
+
+#version-link {
+  position: fixed; right: 16px; bottom: 12px; z-index: 50;
+  color: var(--muted); font-size: 12.5px; text-decoration: none;
+  background: rgba(10,7,4,.7); border: 1px solid #4a3320;
+  border-radius: 14px; padding: 5px 14px;
+}
+#version-link:hover { color: var(--brass); border-color: var(--brass); }

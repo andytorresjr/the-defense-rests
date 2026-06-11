@@ -4,6 +4,15 @@ A courtroom trial game in the browser. You are defense counsel in a murder case
 that can actually be won or lost — every input you make feeds a live model of
 twelve jurors, a judge, and an adapting prosecutor.
 
+**Two editions, one game:**
+
+- **Classic 2D** (`/`) — illustrated visual-novel style, zero dependencies.
+- **Cinematic 3D** (`/3d/`) — a Three.js courtroom with a story-mode console
+  feel: a camera director that cuts between shots as each character speaks,
+  procedural low-poly cast, letterboxing, title cards, and procedural sound
+  (objection stings, the gavel). Same engine, same case, same rules — the
+  trial logic is shared between both editions.
+
 ## Run it
 
 ES modules require a local server (they will not load from `file://`):
