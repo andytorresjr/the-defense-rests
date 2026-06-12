@@ -83,6 +83,7 @@ async function trialLoop() {
       case 'phaseBanner': {
         applyAction(state, { type: 'SET_PHASE', phase: step.phase });
         updateFocus(state, CASE);
+        courtScene.director.idle(step.phase);
         playGavel(2);
         const el = document.getElementById('screen-generic');
         el.innerHTML = `<div class="title-card-cine"><h2>${step.title}</h2><p>${step.sub}</p><button class="big-btn" data-go>Continue</button></div>`;
@@ -138,6 +139,7 @@ async function trialLoop() {
 
       case 'verdict': {
         applyAction(state, { type: 'SET_PHASE', phase: 'verdict' });
+        courtScene.director.special('verdict');
         playDrone();
         const result = rebuildResult(state);
         await screens.showVerdict(state, CASE, result);

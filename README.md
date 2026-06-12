@@ -17,11 +17,19 @@ twelve jurors, a judge, and an adapting prosecutor.
 **Two editions, one game:**
 
 - **Classic 2D** (`/`) — illustrated visual-novel style, zero dependencies.
-- **Cinematic 3D** (`/3d/`) — a Three.js courtroom with a story-mode console
-  feel: a camera director that cuts between shots as each character speaks,
-  procedural low-poly cast, letterboxing, title cards, and procedural sound
-  (objection stings, the gavel). Same engine, same case, same rules — the
-  trial logic is shared between both editions.
+- **Cinematic 3D** (`/3d/`) — a Three.js courtroom shot like a prestige legal
+  drama. A deterministic camera director runs a 30-shot library with real
+  cinematography grammar: 180° line discipline, shot rotation so no angle
+  repeats, over-the-shoulder coverage, reaction cutaways to the defendant and
+  jurors, whip-cut objections, a gavel low-angle on rulings, a creeping ECU
+  when a witness cracks, and a 20-second push-in on the defendant at the
+  verdict. Every frame goes through a film pipeline — depth of field racked
+  per shot, bloom, teal/amber grade, grain, vignette — with auto quality
+  tiers for slower machines. The room is fully procedural PBR (oak, mahogany
+  raised paneling, brass, late-afternoon sun pools), and the cast are
+  articulated procedural humans with gaze tracking, blinks, jaw-synced
+  speech, gestures, and moods. Zero assets, zero build step. Same engine,
+  same cases, same rules as the 2D edition.
 
 ## Run it
 

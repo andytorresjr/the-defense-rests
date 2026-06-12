@@ -27,7 +27,7 @@ export class Courtroom3D extends Courtroom {
   hide() {
     super.hide();
     this.scene3d.quiet();
-    this.scene3d.setOrbit(true);
+    this.scene3d.director.idle(this.state.phase);
   }
 
   refresh() {
@@ -46,14 +46,24 @@ export class Courtroom3D extends Courtroom {
   setWitness(witnessData) {
     super.setWitness(witnessData);
     this.scene3d.seatWitness(witnessData ? witnessData.portrait : null);
-    if (witnessData) this.scene3d.setShot('witness');
+    if (witnessData) this.scene3d.director.special('witness-arrival');
+  }
+
+  runAdmission(items) {
+    this._admissionCut = true; // first beat gets the exhibit-insert shot
+    return super.runAdmission(items);
   }
 
   // Called once per beat by every playback path in the parent class —
   // the single hook that makes the whole game cinematic.
   nameFor(beat) {
     const r = super.nameFor(beat);
-    this.scene3d.onBeat(beat, r.side);
+    const ctx = {};
+    if (this._admissionCut) {
+      ctx.admissionFirst = true;
+      this._admissionCut = false;
+    }
+    this.scene3d.onBeat(beat, r.side, ctx);
     return r;
   }
 }

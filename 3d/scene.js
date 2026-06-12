@@ -1,63 +1,73 @@
-// The 3D courtroom: room, furniture, cast, lighting, and the cinematic camera
-// director that cuts between shots based on who is speaking.
+// The 3D courtroom orchestrator. Owns the renderer, camera, IBL and frame loop;
+// the room and lighting rig come from props.js, the procedural cast from
+// characters.js, every camera decision from the Director, and the graded
+// post-processing chain from post.js.
 import * as THREE from 'three';
-import { makePerson, randomCivilian } from './characters.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { makePerson, randomCivilian, setCharacterQuality } from './characters.js';
+import { buildMaterials } from './textures.js';
+import { buildCourtroom, buildLights } from './props.js';
+import { Director } from './director.js';
+import { CinematicPipeline } from './post.js';
 import { playSting, playGavel } from './sound.js';
 
-const WOOD_DARK = 0x3a2a18, WOOD = 0x5a4126, WOOD_LIGHT = 0x7a5a34;
+// Gallery sitters land on the pews (rows z 6.4 / 8.0 / 9.6, seats y 0.46,
+// center aisle x -0.7..0.7 kept clear).
+const GALLERY_SEATS = [
+  [-4.6, 6.4], [-2.0, 6.4], [3.2, 6.4], [5.1, 6.4],
+  [-5.2, 8.0], [1.6, 8.0], [4.3, 8.0],
+  [-2.8, 9.6], [2.4, 9.6],
+];
 
-function mat(color, rough = 0.8) {
-  return new THREE.MeshStandardMaterial({ color, roughness: rough, metalness: 0.05 });
-}
-
-function box(w, h, d, material, x, y, z, parent) {
-  const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), material);
-  m.position.set(x, y, z);
-  m.castShadow = m.receiveShadow = true;
-  parent.add(m);
-  return m;
-}
-
-// Named camera shots: [position, lookAt]
-const SHOTS = {
-  wide: [[0, 3.4, 11.5], [0, 1.6, -4]],
-  judge: [[-0.6, 1.4, -2.2], [0, 3.1, -6.8]],
-  witness: [[-2.0, 1.7, -2.3], [-3.7, 1.8, -4.9]],
-  prosecutor: [[-1.4, 1.7, 0.4], [3.1, 1.55, 3.0]],
-  defense: [[1.4, 1.7, 0.4], [-3.1, 1.55, 3.0]],
-  jury: [[2.2, 1.8, 1.6], [7.2, 1.45, -2.4]],
-  gallery: [[0, 2.2, 1.5], [0, 1.7, 9]],
-};
+const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 
 export class CourtScene {
   constructor(canvas) {
+    const q = new URLSearchParams(location.search);
+
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
-    this.renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.65;
+    this.renderer.toneMappingExposure = 1.12;
+    this.renderer.outputColorSpace = THREE.SRGBColorSpace;
+    // pixelRatio is owned by the post pipeline (tier-dependent).
 
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color(0x171008);
-    this.scene.fog = new THREE.Fog(0x171008, 18, 34);
+    this.scene.background = new THREE.Color(0x0b0805);
+    this.scene.fog = new THREE.Fog(0x1a120a, 26, 60);
 
-    this.camera = new THREE.PerspectiveCamera(42, 1, 0.1, 60);
-    this._camPos = new THREE.Vector3(...SHOTS.wide[0]);
-    this._camTarget = new THREE.Vector3(...SHOTS.wide[1]);
-    this._wantPos = this._camPos.clone();
-    this._wantTarget = this._camTarget.clone();
-    this.orbit = true;
-    this._orbitAngle = 0;
+    // IBL replaces all ambient light.
+    const pmrem = new THREE.PMREMGenerator(this.renderer);
+    this.scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+    pmrem.dispose();
+
+    this.camera = new THREE.PerspectiveCamera(42, 1, 0.1, 80);
+
+    const MATS = buildMaterials(this.renderer);
+    buildCourtroom(this.scene, MATS);
+    this.lights = buildLights(this.scene);
 
     this.people = [];
+    this.galleryFolk = [];
     this.witness = null;
     this.jurors = [];
     this._talker = null;
+    this._gaze = new THREE.Vector3();
 
-    this._buildRoom();
     this._buildCast();
-    this._lights();
+
+    this.director = new Director({
+      dev: q.get('dev') != null,
+      apertureScale: parseFloat(q.get('dof') || '') || 1,
+    });
+    this._syncAnchors();
+
+    this.post = new CinematicPipeline(this.renderer, this.scene, this.camera);
+    this.post.onTierChange = tier => this._applyTier(tier);
+    this._applyTier(this.post.tier);
+
+    this.director.idle('orbit');
 
     this._clock = new THREE.Clock();
     const loop = () => {
@@ -74,109 +84,22 @@ export class CourtScene {
     this.renderer.setSize(w, h, false);
     this.camera.aspect = w / h;
     this.camera.updateProjectionMatrix();
+    this.post.setSize(w, h);
+    // Narrow windows widen the lens instead of cropping shoulders out of CUs.
+    this.director.setAspectComp(clamp(1.5 / this.camera.aspect, 1, 1.35));
   }
 
-  // ---------- room ----------
-  _buildRoom() {
-    const S = this.scene;
-
-    // floor: wood planks via procedural canvas texture
-    const c = document.createElement('canvas');
-    c.width = c.height = 256;
-    const ctx = c.getContext('2d');
-    ctx.fillStyle = '#4a3522';
-    ctx.fillRect(0, 0, 256, 256);
-    for (let i = 0; i < 8; i++) {
-      ctx.fillStyle = `rgba(${20 + Math.random() * 30}, ${12 + Math.random() * 20}, 6, ${0.25 + Math.random() * 0.2})`;
-      ctx.fillRect(0, i * 32, 256, 30);
-    }
-    const floorTex = new THREE.CanvasTexture(c);
-    floorTex.wrapS = floorTex.wrapT = THREE.RepeatWrapping;
-    floorTex.repeat.set(7, 9);
-    const floor = new THREE.Mesh(
-      new THREE.PlaneGeometry(26, 32),
-      new THREE.MeshStandardMaterial({ map: floorTex, roughness: 0.7 }));
-    floor.rotation.x = -Math.PI / 2;
-    floor.position.z = 3;
-    floor.receiveShadow = true;
-    S.add(floor);
-
-    // walls + wainscot
-    const wallMat = mat(0x6e6253, 0.95);
-    const wainscotMat = mat(WOOD_DARK, 0.85);
-    const back = box(26, 9, 0.4, wallMat, 0, 4.5, -9, S);
-    back.receiveShadow = true;
-    box(26, 2.6, 0.5, wainscotMat, 0, 1.3, -8.9, S);
-    for (const side of [-1, 1]) {
-      box(0.4, 9, 32, wallMat, side * 12, 4.5, 3, S);
-      box(0.5, 2.6, 32, wainscotMat, side * 11.9, 1.3, 3, S);
-    }
-    // ceiling
-    const ceil = new THREE.Mesh(new THREE.PlaneGeometry(26, 32), mat(0x2c2418, 1));
-    ceil.rotation.x = Math.PI / 2;
-    ceil.position.set(0, 9, 3);
-    S.add(ceil);
-
-    // tall windows on the right wall with light shafts
-    for (const z of [-4, 1, 6]) {
-      box(0.2, 4.4, 1.8, new THREE.MeshStandardMaterial({
-        color: 0xcfe0ee, emissive: 0x8fa8be, emissiveIntensity: 0.55, roughness: 1,
-      }), 11.7, 4.4, z, S);
-      const shaft = new THREE.Mesh(
-        new THREE.PlaneGeometry(7, 3.6),
-        new THREE.MeshBasicMaterial({
-          color: 0xcfb98a, transparent: true, opacity: 0.05,
-          side: THREE.DoubleSide, depthWrite: false,
-        }));
-      shaft.position.set(8, 3.4, z);
-      shaft.rotation.set(0, 0.3, -0.5);
-      S.add(shaft);
-    }
-
-    // judge bench (elevated, centered at back)
-    const bench = new THREE.Group();
-    box(5.4, 2.5, 1.8, mat(WOOD), 0, 1.25, 0, bench);
-    box(5.8, 0.25, 2.1, mat(WOOD_LIGHT), 0, 2.6, 0, bench);
-    box(1.6, 1.6, 0.1, mat(0xb08d4f, 0.4), 0, 1.5, 0.96, bench); // seal
-    const sealRing = new THREE.Mesh(new THREE.TorusGeometry(0.62, 0.05, 8, 24), mat(0x8a6a30, 0.4));
-    sealRing.position.set(0, 1.5, 1.02);
-    bench.add(sealRing);
-    box(7.5, 0.5, 3.2, mat(WOOD_DARK), 0, 0.25, -0.2, bench); // dais
-    bench.position.set(0, 0, -6.6);
-    this.scene.add(bench);
-
-    // witness stand (left of bench)
-    const stand = new THREE.Group();
-    box(1.7, 1.15, 1.5, mat(WOOD), 0, 0.575, 0, stand);
-    box(1.9, 0.15, 1.7, mat(WOOD_LIGHT), 0, 1.22, 0, stand);
-    stand.position.set(-3.6, 0, -4.7);
-    this.scene.add(stand);
-
-    // jury box (right side): rail + two tiers
-    const jbox = new THREE.Group();
-    box(1.6, 1.0, 7.2, mat(WOOD), 0.2, 0.5, 0, jbox);
-    box(1.8, 0.12, 7.4, mat(WOOD_LIGHT), 0.2, 1.06, 0, jbox);
-    box(2.4, 0.3, 7.4, mat(WOOD_DARK), 1.6, 0.15, 0, jbox);
-    jbox.position.set(7.2, 0, -2.4);
-    this.scene.add(jbox);
-
-    // counsel tables
-    for (const side of [-1, 1]) {
-      const t = new THREE.Group();
-      box(2.6, 0.1, 1.2, mat(WOOD_LIGHT), 0, 0.78, 0, t);
-      box(0.12, 0.78, 1.0, mat(WOOD), -1.15, 0.39, 0, t);
-      box(0.12, 0.78, 1.0, mat(WOOD), 1.15, 0.39, 0, t);
-      // papers
-      box(0.5, 0.02, 0.36, mat(0xe9e4d4, 1), side * 0.4, 0.85, 0.1, t);
-      t.position.set(side * 3.1, 0, 2.2);
-      this.scene.add(t);
-    }
-
-    // gallery rail + benches
-    box(14, 0.9, 0.15, mat(WOOD), 0, 0.45, 4.8, S);
-    for (const z of [6.4, 8.0, 9.6]) {
-      box(13, 0.45, 0.5, mat(WOOD_DARK), 0, 0.45, z, S);
-      box(13, 0.7, 0.12, mat(WOOD_DARK), 0, 0.8, z + 0.3, S);
+  // Tier side effects the pipeline deliberately doesn't own: character LOD,
+  // crowd washes, and the sun's shadow budget.
+  _applyTier(tier) {
+    setCharacterQuality(tier === 0 ? 'high' : tier === 1 ? 'medium' : 'low');
+    const L = this.lights;
+    if (L.juryWash) L.juryWash.visible = tier < 2;
+    if (L.counselWash) L.counselWash.visible = tier < 2;
+    const size = tier === 2 ? 1024 : 2048;
+    if (L.sun && L.sun.shadow.mapSize.x !== size) {
+      L.sun.shadow.mapSize.set(size, size);
+      if (L.sun.shadow.map) { L.sun.shadow.map.dispose(); L.sun.shadow.map = null; }
     }
   }
 
@@ -207,11 +130,19 @@ export class CourtScene {
       skin: '#caa284', hair: 'short', hairColor: '#4d4339', outfit: 'suit', seated: true,
     }), -4.1, 0.42, 2.6, Math.PI);
 
-    // sparse gallery, facing the bench
-    let gi = 0;
-    for (const [x, z] of [[-4.5, 6.4], [2.5, 6.4], [5.5, 8.0], [-1.5, 9.6]]) {
-      add(randomCivilian('gallery' + gi++), x, 0.45, z, Math.PI);
-    }
+    GALLERY_SEATS.forEach(([x, z], i) => {
+      const p = add(randomCivilian('gallery' + i), x, 0.45, z, Math.PI);
+      p.setShadows(false);
+      p.focused = false;
+      this.galleryFolk.push(p);
+    });
+  }
+
+  _syncAnchors() {
+    this.director.setAnchors({
+      judge: this.judge, prosecutor: this.prosecutor, defense: this.defenseAtty,
+      defendant: this.defendant, witness: this.witness, jurors: this.jurors,
+    });
   }
 
   setDefendant(portraitSpec) {
@@ -226,6 +157,7 @@ export class CourtScene {
     this.scene.add(p.group);
     this.people.push(p);
     this.defendant = p;
+    this._syncAnchors();
   }
 
   setJury(jurors) {
@@ -239,10 +171,13 @@ export class CourtScene {
       const p = randomCivilian(j.id + j.name);
       p.group.position.set(7.0 + row * 1.15, 0.5 + row * 0.28, -5.3 + col * 1.15);
       p.group.rotation.y = -Math.PI / 2.3;
+      p.setShadows(false);
+      p.focused = false;
       this.scene.add(p.group);
       this.people.push(p);
       this.jurors.push(p);
     });
+    this._syncAnchors();
   }
 
   seatWitness(portraitSpec) {
@@ -259,53 +194,58 @@ export class CourtScene {
       this.people.push(p);
       this.witness = p;
     }
+    this._syncAnchors();
   }
 
   setWitnessMood(mood) {
     if (this.witness) this.witness.mood = mood;
-  }
-
-  // ---------- lighting ----------
-  _lights() {
-    this.scene.add(new THREE.AmbientLight(0x9a8a70, 1.25));
-    this.scene.add(new THREE.HemisphereLight(0xc8b898, 0x4a3a26, 0.7));
-
-    const sun = new THREE.DirectionalLight(0xe8cf9e, 1.9);
-    sun.position.set(10, 8, 2);
-    sun.castShadow = true;
-    sun.shadow.mapSize.set(2048, 2048);
-    sun.shadow.camera.left = -14; sun.shadow.camera.right = 14;
-    sun.shadow.camera.top = 12; sun.shadow.camera.bottom = -6;
-    this.scene.add(sun);
-
-    const benchSpot = new THREE.SpotLight(0xffe2b0, 60, 18, 0.5, 0.5);
-    benchSpot.position.set(0, 7.5, -3.5);
-    benchSpot.target.position.set(0, 2, -6.6);
-    this.scene.add(benchSpot, benchSpot.target);
-
-    const standSpot = new THREE.SpotLight(0xffe8c4, 35, 14, 0.45, 0.6);
-    standSpot.position.set(-3.5, 6.5, -1.5);
-    standSpot.target.position.set(-3.6, 1.2, -4.7);
-    this.scene.add(standSpot, standSpot.target);
+    this.director.setWitnessMood(mood);
   }
 
   // ---------- direction ----------
   setShot(name) {
-    const shot = SHOTS[name] || SHOTS.wide;
-    this._wantPos.set(...shot[0]);
-    this._wantTarget.set(...shot[1]);
+    this.director.cut(name);
+    this._updateFocusFlags();
   }
 
-  setOrbit(on) { this.orbit = on; }
+  // Legacy shim: the Director's idle backdrops replaced the orbit flag.
+  setOrbit(on) { if (on) this.director.idle('orbit'); }
+
+  _headOf(person, out) {
+    return person.parts.head.getWorldPosition(out);
+  }
 
   _setTalker(person) {
     if (this._talker && this._talker !== person) this._talker.talking = false;
     this._talker = person;
     if (person) person.talking = true;
+    this._aimGazes(person);
+  }
+
+  // Everyone watches the speaker; the speaker addresses a sensible listener.
+  _aimGazes(speaker) {
+    if (!speaker) return; // narrator beats: the room keeps watching the last speaker
+    this._headOf(speaker, this._gaze);
+    const principals = [this.judge, this.prosecutor, this.defenseAtty, this.defendant, this.witness];
+    for (const p of principals) {
+      if (p && p !== speaker) p.lookAt(this._gaze);
+    }
+    for (const p of this.jurors) if (p.focused) p.lookAt(this._gaze);
+
+    // The speaker's own eyeline.
+    let target = null;
+    if (speaker === this.witness) {
+      target = this.director.examiner === 'def' ? this.defenseAtty : this.prosecutor;
+    } else if (speaker === this.prosecutor || speaker === this.defenseAtty) {
+      target = this.witness || this.judge;
+    } else if (speaker === this.judge) {
+      target = this.witness || this.prosecutor;
+    }
+    if (target) speaker.lookAt(this._headOf(target, this._gaze));
   }
 
   // Called for every dialogue beat (via Courtroom3D.nameFor).
-  onBeat(beat, side) {
+  onBeat(beat, side, ctx = {}) {
     if (beat.kind === 'objection') {
       const who = beat.speaker === 'prosecutor' ? this.prosecutor : this.defenseAtty;
       who.pointT = 1.6;
@@ -313,26 +253,31 @@ export class CourtScene {
     }
     if (beat.kind === 'ruling') playGavel();
 
-    switch (side) {
-      case 'wit': this._setTalker(this.witness); this.setShot('witness'); break;
-      case 'pros': this._setTalker(this.prosecutor); this.setShot('prosecutor'); break;
-      case 'def': this._setTalker(this.defenseAtty); this.setShot('defense'); break;
-      case 'judge': this._setTalker(this.judge); this.setShot('judge'); break;
-      case 'narrator':
-        this._setTalker(null);
-        this.setShot(beat.kind === 'cue' ? 'jury' : 'wide');
-        break;
-      default: this._setTalker(null); this.setShot('wide');
-    }
+    const map = { wit: this.witness, pros: this.prosecutor, def: this.defenseAtty, judge: this.judge };
+    this._setTalker(map[side] ?? null);
+    this.director.onBeat(beat, side, ctx);
+    this._updateFocusFlags();
+  }
+
+  // Background characters animate at full rate only when the camera can see
+  // them properly (jury/gallery/wide coverage).
+  _updateFocusFlags() {
+    const n = this.director.shotName || '';
+    const wide = /^(jury|juror|est_|gallery|doors|orbit|stand_arrival)/.test(n);
+    for (const p of this.jurors) p.focused = wide;
+    for (const p of this.galleryFolk) p.focused = wide;
   }
 
   playerObjects() {
     this.defenseAtty.pointT = 1.6;
-    this.setShot('defense');
+    this.director.special('objection-def');
     playSting();
   }
 
-  quiet() { this._setTalker(null); }
+  quiet() {
+    this._setTalker(null);
+    for (const p of this.people) p.lookAt(null);
+  }
 
   // ---------- frame ----------
   _tick() {
@@ -341,20 +286,16 @@ export class CourtScene {
 
     for (const p of this.people) p.update(t, dt);
 
-    if (this.orbit) {
-      this._orbitAngle += dt * 0.07;
-      this._wantPos.set(Math.sin(this._orbitAngle) * 9.5, 3.4, 2 + Math.cos(this._orbitAngle) * 9.5);
-      this._wantTarget.set(0, 1.7, -2);
+    const s = this.director.tick(dt, t);
+    this.camera.position.copy(s.position);
+    this.camera.lookAt(s.lookAt);
+    if (s.roll) this.camera.rotateZ(s.roll);
+    if (Math.abs(this.camera.fov - s.fov) > 0.01) {
+      this.camera.fov = s.fov;
+      this.camera.updateProjectionMatrix();
     }
 
-    // smooth cinematic transitions + a touch of handheld drift
-    const k = 1 - Math.exp(-dt * (this.orbit ? 2.4 : 3.6));
-    this._camPos.lerp(this._wantPos, k);
-    this._camTarget.lerp(this._wantTarget, k);
-    const driftX = Math.sin(t * 0.45) * 0.04, driftY = Math.sin(t * 0.6 + 1.7) * 0.03;
-    this.camera.position.copy(this._camPos).add(new THREE.Vector3(driftX, driftY, 0));
-    this.camera.lookAt(this._camTarget.x + driftX * 0.5, this._camTarget.y + driftY * 0.5, this._camTarget.z);
-
-    this.renderer.render(this.scene, this.camera);
+    this.post.setFocus(s.dofFocus, s.dofAperture, s.dofMaxblur);
+    this.post.render(dt);
   }
 }
