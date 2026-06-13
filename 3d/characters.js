@@ -162,10 +162,10 @@ const GEO = {
   shoe: () => { const g = new THREE.CapsuleGeometry(0.042, 0.13, 4, 8); g.rotateX(Math.PI / 2); return g; },
   neck: () => new THREE.CylinderGeometry(0.045, 0.058, 0.09, 10),
   chin: () => new THREE.SphereGeometry(0.085, 14, 10),
-  eyeWhite: () => new THREE.SphereGeometry(0.021, 10, 8),
-  iris: () => new THREE.CircleGeometry(0.0092, 12),
-  lid: () => new THREE.SphereGeometry(0.0235, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2),
-  brow: () => new THREE.BoxGeometry(0.052, 0.011, 0.014),
+  eyeWhite: () => new THREE.SphereGeometry(0.0165, 12, 10),
+  iris: () => new THREE.CircleGeometry(0.0108, 14),
+  lid: () => new THREE.SphereGeometry(0.020, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2.2),
+  brow: () => new THREE.BoxGeometry(0.05, 0.012, 0.016),
   upperLip: () => new THREE.BoxGeometry(0.052, 0.010, 0.014),
   lowerLip: () => new THREE.BoxGeometry(0.050, 0.012, 0.014),
   stubble: () => new THREE.SphereGeometry(0.088, 12, 8),
@@ -214,23 +214,31 @@ function robeGeo(seated) {
 function headBaseGeo() {
   return getGeo('headBase', () => {
     const parts = [];
-    const cr = new THREE.SphereGeometry(0.105, 20, 14);
-    cr.scale(1.0, 1.18, 1.08); cr.translate(0, 0.030, -0.005);
+    const cr = new THREE.SphereGeometry(0.105, 24, 16);
+    cr.scale(1.0, 1.16, 1.10); cr.translate(0, 0.028, -0.002);
     parts.push(cr);
     for (const sd of [-1, 1]) {
-      const cheek = new THREE.SphereGeometry(0.032, 8, 6);
-      cheek.scale(1.2, 1.0, 0.9); cheek.translate(sd * 0.055, -0.018, 0.072);
+      // cheekbones: a subtle wide, flat fullness at eye-to-mid height — adds
+      // facial structure without the discrete ball that read as a muzzle/jowl
+      const cheek = new THREE.SphereGeometry(0.036, 10, 8);
+      cheek.scale(1.25, 0.9, 0.45); cheek.translate(sd * 0.052, -0.006, 0.058);
       parts.push(cheek);
       const ear = new THREE.SphereGeometry(0.022, 8, 6);
-      ear.scale(0.55, 1.15, 0.85); ear.translate(sd * 0.103, 0.005, -0.008);
+      ear.scale(0.5, 1.2, 0.9); ear.translate(sd * 0.104, 0.000, -0.010);
       parts.push(ear);
     }
-    const bridge = new THREE.BoxGeometry(0.020, 0.048, 0.022);
-    bridge.rotateX(-0.35); bridge.translate(0, 0.012, 0.102);
+    // nose: slimmer bridge + smaller tip, less beaky
+    const bridge = new THREE.BoxGeometry(0.017, 0.05, 0.018);
+    bridge.rotateX(-0.30); bridge.translate(0, 0.014, 0.099);
     parts.push(bridge);
-    const tip = new THREE.SphereGeometry(0.016, 8, 6);
-    tip.scale(1.15, 0.95, 1.10); tip.translate(0, -0.012, 0.112);
+    const tip = new THREE.SphereGeometry(0.0135, 10, 8);
+    tip.scale(1.15, 0.9, 1.05); tip.translate(0, -0.014, 0.106);
     parts.push(tip);
+    for (const sd of [-1, 1]) { // soft nostril wings
+      const wing = new THREE.SphereGeometry(0.009, 6, 5);
+      wing.translate(sd * 0.014, -0.02, 0.098);
+      parts.push(wing);
+    }
     return mergeGeometries(parts);
   });
 }
@@ -246,55 +254,63 @@ function hairGeo(style) {
       g.scale(sx, sy, sz); g.translate(x, y, z);
       parts.push(g);
     };
+    // Caps hug the egg-shaped skull (scale 1.0/1.16/1.10, center y .028 z -.002),
+    // so the hairline rings the head cleanly instead of cutting a hard circle.
     switch (style) {
       case 'short':
-        cap(0.112, 18, 12, 1.95, 1, 1, 1, 0, 0.035, -0.004);
-        { const f = new THREE.BoxGeometry(0.055, 0.013, 0.016); // side-part fringe, hairline-high
-          f.rotateZ(-0.12); f.translate(0.028, 0.102, 0.075); parts.push(f); }
+        cap(0.107, 20, 14, 1.78, 1.04, 1.18, 1.13, 0, 0.030, -0.003);
         break;
       case 'crew':
-        cap(0.110, 16, 10, 1.45, 1, 0.82, 1, 0, 0.045, -0.004);
+        cap(0.106, 18, 12, 1.55, 1.04, 1.02, 1.13, 0, 0.034, -0.003);
         break;
-      case 'balding': { // side/back band only
-        const g = new THREE.SphereGeometry(0.113, 16, 8, 0, Math.PI * 2, 1.15, 0.95);
-        g.translate(0, 0.030, -0.004); parts.push(g);
+      case 'balding': { // receded: a higher, shorter cap leaving the front bare
+        const g = new THREE.SphereGeometry(0.106, 18, 10, 0, Math.PI * 2, 0.85, 1.05);
+        g.scale(1.04, 1.16, 1.13); g.translate(0, 0.028, -0.012); parts.push(g);
         break;
       }
       case 'long': {
-        cap(0.113, 18, 12, 2.0, 1, 1, 1, 0, 0.034, -0.004);
-        const fall = new THREE.CylinderGeometry(0.105, 0.085, 0.30, 12, 1, true);
-        fall.translate(0, -0.10, -0.045); parts.push(fall);
+        cap(0.108, 20, 14, 1.92, 1.05, 1.18, 1.14, 0, 0.030, -0.003);
+        const fall = new THREE.CylinderGeometry(0.108, 0.088, 0.32, 14, 1, true);
+        fall.translate(0, -0.10, -0.05); parts.push(fall);
         for (const sd of [-1, 1]) {
-          const cu = new THREE.BoxGeometry(0.024, 0.20, 0.07);
-          cu.translate(sd * 0.105, -0.045, 0.012); parts.push(cu);
+          const cu = new THREE.BoxGeometry(0.026, 0.22, 0.075);
+          cu.translate(sd * 0.108, -0.05, 0.01); parts.push(cu);
         }
         break;
       }
       case 'bun': {
-        cap(0.112, 18, 12, 1.95, 1, 1, 1, 0, 0.035, -0.004); // short cap, no fringe
-        const b = new THREE.SphereGeometry(0.045, 10, 8);
-        b.translate(0, 0.095, -0.108); parts.push(b);
+        cap(0.107, 20, 14, 1.78, 1.04, 1.18, 1.13, 0, 0.030, -0.003);
+        const b = new THREE.SphereGeometry(0.05, 12, 10);
+        b.translate(0, 0.10, -0.115); parts.push(b);
         break;
       }
       case 'ponytail': {
-        cap(0.110, 16, 10, 1.45, 1, 0.82, 1, 0, 0.045, -0.004); // crew cap
-        const tl = new THREE.CapsuleGeometry(0.026, 0.14, 3, 8);
-        tl.rotateX(0.55); tl.translate(0, -0.01, -0.135); parts.push(tl);
+        cap(0.106, 18, 12, 1.6, 1.04, 1.06, 1.13, 0, 0.032, -0.003);
+        const tl = new THREE.CapsuleGeometry(0.03, 0.16, 4, 10);
+        tl.rotateX(0.5); tl.translate(0, -0.01, -0.14); parts.push(tl);
         break;
       }
       case 'curly': {
-        const g = new THREE.SphereGeometry(0.115, 12, 8);
-        g.scale(1.04, 0.95, 1.04); g.translate(0, 0.040, -0.005); parts.push(g);
-        for (const [x, y, z] of [[-0.082, 0.095, 0.015], [0.082, 0.095, 0.015],
-          [0, 0.130, -0.050], [0, 0.115, 0.060]]) {
-          const pf = new THREE.SphereGeometry(0.048, 8, 6);
-          pf.translate(x, y, z); parts.push(pf);
+        // dense overlapping clumps over a hugging base — no scalp gaps
+        cap(0.104, 16, 12, 1.7, 1.06, 1.16, 1.14, 0, 0.032, -0.004);
+        const clumps = [
+          [0, 0.135, 0.01, 0.058], [-0.07, 0.115, 0.03, 0.05], [0.07, 0.115, 0.03, 0.05],
+          [-0.095, 0.07, 0.0, 0.05], [0.095, 0.07, 0.0, 0.05], [0, 0.12, -0.07, 0.055],
+          [-0.06, 0.09, -0.08, 0.05], [0.06, 0.09, -0.08, 0.05], [0, 0.075, 0.09, 0.046],
+        ];
+        for (const [x, y, z, r] of clumps) {
+          const pf = new THREE.SphereGeometry(r, 8, 7); pf.translate(x, y, z); parts.push(pf);
         }
         break;
       }
       case 'afro': {
-        const g = new THREE.SphereGeometry(0.140, 14, 10);
-        g.scale(1.06, 1.0, 1.0); g.translate(0, 0.060, -0.012); parts.push(g);
+        const g = new THREE.SphereGeometry(0.142, 16, 12);
+        g.scale(1.04, 1.04, 1.02); g.translate(0, 0.058, -0.012); parts.push(g);
+        // a few surface clumps for texture so it isn't a smooth ball
+        for (const [x, y, z] of [[-0.1, 0.11, 0.05], [0.1, 0.11, 0.05], [0, 0.17, -0.02],
+          [-0.11, 0.07, -0.06], [0.11, 0.07, -0.06]]) {
+          const pf = new THREE.SphereGeometry(0.055, 8, 6); pf.translate(x, y, z); parts.push(pf);
+        }
         break;
       }
     }
@@ -486,42 +502,50 @@ function buildHead(parts, N, casters, traits) {
   chin.scale.set(0.92, 0.72, 0.95);
   jaw.add(chin);
 
-  _c.copy(N.skin).offsetHSL(-0.02, 0.10, -0.13);
+  // lips — close to skin tone (a dark gap reads as a lipless slot), soft
+  _c.copy(N.skin).offsetHSL(-0.015, 0.12, -0.07);
   const lipMat = getMat(_c, 0.5);
-  const lipD = mk(geo('lowerLip'), lipMat, 0, -0.040, 0.112);
+  const lipD = mk(geo('lowerLip'), lipMat, 0, -0.042, 0.100);
   jaw.add(lipD);
   parts.lipD = lipD;
-  const lipU = mk(geo('upperLip'), lipMat, 0, -0.060, 0.096);
+  const lipU = mk(geo('upperLip'), lipMat, 0, -0.058, 0.094);
   head.add(lipU);
   parts.lipU = lipU;
 
-  // aimable eyes + lids
-  const whiteMat = getMat('#f2ece4', 0.30);
+  // aimable eyes set just into the face — eyeball front roughly flush, a soft
+  // shallow socket behind it for grounding (no bulge, no black pit)
+  const whiteMat = getMat('#e8dfce', 0.32);
   const irisMat = getIrisMat(traits.iris);
+  _c.copy(N.skin).multiplyScalar(0.82);
+  const socketMat = getMat(_c, 0.62);
   for (const sd of [-1, 1]) {
     const S = sd < 0 ? 'L' : 'R';
+    // shallow socket shadow — subtle, flat, just frames the eye
+    const socket = mk(geo('eyeWhite'), socketMat, sd * 0.040, 0.018, 0.084);
+    socket.scale.set(1.2, 0.95, 0.35);
+    head.add(socket);
+
     const eye = new THREE.Group();
-    eye.position.set(sd * 0.041, 0.020, 0.0945); // proud of the skull so the white reads
+    eye.position.set(sd * 0.040, 0.018, 0.086); // front pole ~flush with the skull surface
     head.add(eye);
     parts['eye' + S] = eye;
     eye.add(mk(geo('eyeWhite'), whiteMat, 0, 0, 0));
-    eye.add(mk(geo('iris'), irisMat, 0, 0, 0.0196));
+    eye.add(mk(geo('iris'), irisMat, 0, 0, 0.0150));
     const lid = new THREE.Group();
-    lid.position.set(sd * 0.041, 0.020, 0.0945);
+    lid.position.set(sd * 0.040, 0.018, 0.086);
     head.add(lid);
     parts['lid' + S] = lid;
-    // double-sided so the open shell's underside reads as skin, not a void;
-    // parked fully back when open — the shell only shows mid-blink.
+    // double-sided so the shell underside reads as skin; rests over the top
+    // of the eye like an upper lid, drops to cover it on a blink.
     lid.add(mk(geo('lid'), getMat(N.skin, 0.55, { ds: true }), 0, 0, 0));
-    lid.rotation.x = -0.95; // open
+    lid.rotation.x = -1.0; // open (upper lid just over the top of the eye)
   }
 
-  // brows — hair color darkened ×0.7, outer ends slightly down
+  // brows — hair color darkened ×0.7, just above the eyes
   _c.copy(N.hairColor).multiplyScalar(0.7);
   const browMat = getMat(_c, 0.85);
   for (const sd of [-1, 1]) {
-    const brow = mk(geo('brow'), browMat, sd * 0.042, 0.058, 0.096);
-    brow.rotation.z = sd * 0.10 * (sd < 0 ? 1 : 1) * (sd < 0 ? 1 : 1); // set below
+    const brow = mk(geo('brow'), browMat, sd * 0.040, 0.050, 0.092);
     brow.rotation.z = sd < 0 ? -0.10 : 0.10;
     head.add(brow);
     parts[sd < 0 ? 'browL' : 'browR'] = brow;
@@ -931,7 +955,7 @@ function updatePerson(p, t, dt) {
   }
 
   // 10. blink scheduler (deterministic per character; 'down' = half-lidded)
-  let lidX = -0.95 + 0.50 * dn;
+  let lidX = -1.0 + 0.72 * dn;
   if (!(bg && _quality === 'low')) { // low tier: background lids stay open
     const local = (t + p.phase * 10) % p.blinkPeriod;
     const dur = p.focused ? 0.12 : 0.26; // wide window survives 4 Hz sampling
