@@ -28,7 +28,13 @@ twelve jurors, a judge, and an adapting prosecutor.
   tiers for slower machines. The room is fully procedural PBR (oak, mahogany
   raised paneling, brass, late-afternoon sun pools), and the cast are
   articulated procedural humans with gaze tracking, blinks, jaw-synced
-  speech, gestures, and moods. Zero assets, zero build step. Same engine,
+  speech, gestures, and moods. Every input is staged in-scene like an
+  interactive film: jury selection plays over the actual venire seated in the
+  gallery (hover a candidate's name plate to hear how they think, click to
+  strike, and watch the People excuse theirs), openings and closings are
+  argued from counsel table, the call-the-defendant decision is a conference
+  at the defense table, and the foreperson reads the verdict while the camera
+  holds on the defendant. Zero assets, zero build step. Same engine,
   same cases, same rules as the 2D edition.
 
 ## Run it

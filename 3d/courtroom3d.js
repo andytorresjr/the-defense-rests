@@ -57,8 +57,16 @@ export class Courtroom3D extends Courtroom {
   // Called once per beat by every playback path in the parent class —
   // the single hook that makes the whole game cinematic.
   nameFor(beat) {
-    const r = super.nameFor(beat);
+    let r;
+    if (beat.speaker === 'defendant') {
+      r = { name: this.caseData.defendant?.name ?? 'The Defendant', side: 'defendant' };
+    } else if (beat.speaker === 'foreperson') {
+      r = { name: beat.name || 'The Foreperson', side: 'jury' };
+    } else {
+      r = super.nameFor(beat);
+    }
     const ctx = {};
+    if (beat.shot) ctx.shot = beat.shot; // authored beats may pin a camera shot
     if (this._admissionCut) {
       ctx.admissionFirst = true;
       this._admissionCut = false;

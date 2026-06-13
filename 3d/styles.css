@@ -166,3 +166,41 @@
   border-radius: 14px; padding: 5px 14px;
 }
 #version-link:hover { color: var(--brass); border-color: var(--brass); }
+
+/* ---------- floating 3D labels (voir dire) ---------- */
+.v-labels { position: absolute; inset: 0; z-index: 6; pointer-events: none; }
+.v-label { position: absolute; transform: translate(-50%, -110%); }
+.v-chip {
+  pointer-events: auto; cursor: pointer; text-align: center; position: relative;
+  background: rgba(12,8,4,.82); border: 1px solid rgba(201,162,94,.45);
+  border-radius: 7px; padding: 4px 10px; min-width: 92px;
+  transition: border-color .15s, background .15s;
+}
+.v-chip:hover { border-color: var(--brass); background: rgba(20,13,7,.94); z-index: 3; }
+.v-name { font-family: Georgia, serif; font-size: 13px; color: #e8c98c; white-space: nowrap; }
+.v-sub { font-size: 10.5px; color: var(--muted); white-space: nowrap; }
+.v-quotes {
+  display: none; position: absolute; top: calc(100% + 6px); left: 50%; transform: translateX(-50%);
+  width: max-content; max-width: 280px; text-align: left;
+  background: rgba(8,5,2,.95); border: 1px solid rgba(201,162,94,.5); border-radius: 8px;
+  padding: 8px 12px; font-style: italic; font-family: Georgia, serif;
+  font-size: 12.5px; color: #d8cdb8; line-height: 1.45;
+}
+.v-quotes div + div { margin-top: 5px; }
+.v-chip:hover .v-quotes { display: block; }
+.v-chip.struck { border-color: #7a2230; }
+.v-chip.struck .v-name { text-decoration: line-through; color: #d98c8c; }
+.v-chip.struck::after {
+  content: '✕ STRUCK'; display: block; font-size: 9px; letter-spacing: .14em; color: #d8453a;
+}
+.v-chip.flash { animation: vFlash .9s ease; }
+@keyframes vFlash {
+  0% { background: rgba(140,31,31,.92); border-color: #d8453a; }
+  100% { background: rgba(12,8,4,.82); border-color: rgba(201,162,94,.45); }
+}
+
+/* new dialogue sides + multi-select tray */
+#speaker[data-side="defendant"] { color: #c9a25e; }
+#speaker[data-side="jury"] { color: #b8c4a9; }
+.choice.picked { border-color: var(--brass); background: #3a2a16; }
+.choice.picked .chip { background: var(--brass); color: #1b130a; }

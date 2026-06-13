@@ -8,10 +8,11 @@ import { deliberate } from '../src/engine/jury.js';
 import { applyNoTestifyInference } from '../src/engine/closings.js';
 import { makeRng } from '../src/util/rng.js';
 import * as screens from '../src/ui/screens.js';
+import * as seq from './screens3d.js';
 import { initDebug, setDebugState } from '../src/ui/debug.js';
 import { CourtScene } from './scene.js';
 import { Courtroom3D } from './courtroom3d.js';
-import { playDrone, playGavel } from './sound.js';
+import { playGavel } from './sound.js';
 
 const SAVE_KEY = 'tdr3d-save-v1';
 const SETTINGS_KEY = 'tdr3d-settings-v1';
@@ -72,12 +73,12 @@ async function trialLoop() {
     switch (step.type) {
       case 'voirDire':
         applyAction(state, { type: 'SET_PHASE', phase: 'voirDire' });
-        await screens.runVoirDire(state, CASE);
+        await seq.runVoirDire3D(state, CASE, courtroom, courtScene);
         break;
 
       case 'openings':
         applyAction(state, { type: 'SET_PHASE', phase: 'openings' });
-        await screens.runOpenings(state, CASE);
+        await seq.runOpenings3D(state, CASE, courtroom, courtScene);
         break;
 
       case 'phaseBanner': {
@@ -108,24 +109,21 @@ async function trialLoop() {
         break;
 
       case 'event':
-        courtroom.hide();
-        await screens.showEvent(state, CASE.events[step.id]);
+        await seq.showEvent3D(state, CASE.events[step.id], courtroom, courtScene);
         break;
 
       case 'decision':
-        courtroom.hide();
-        await screens.runDecision(state, CASE.decisions[step.id]);
+        await seq.runDecision3D(state, CASE.decisions[step.id], courtroom, courtScene);
         break;
 
       case 'noTestifyInstruction':
         applyNoTestifyInference(state);
-        await screens.showInstruction(CASE.arguments.NO_DEFENDANT_INSTRUCTION);
+        await seq.showInstruction3D(CASE.arguments.NO_DEFENDANT_INSTRUCTION, courtroom, courtScene);
         break;
 
       case 'closings':
-        courtroom.hide();
         applyAction(state, { type: 'SET_PHASE', phase: 'closings' });
-        await screens.runClosings(state, CASE);
+        await seq.runClosings3D(state, CASE, courtroom, courtScene);
         break;
 
       case 'deliberation': {
@@ -139,10 +137,8 @@ async function trialLoop() {
 
       case 'verdict': {
         applyAction(state, { type: 'SET_PHASE', phase: 'verdict' });
-        courtScene.director.special('verdict');
-        playDrone();
         const result = rebuildResult(state);
-        await screens.showVerdict(state, CASE, result);
+        await seq.showVerdict3D(state, CASE, result, courtroom, courtScene);
         clearSave();
         location.reload();
         return;
@@ -176,9 +172,17 @@ function rebuildResult(state) {
 
 // ?preview=<shot> boots straight into a posed courtroom frame — used for
 // visual debugging and screenshots without clicking through the game.
+// ?preview=voirdire poses the jury-selection scene with labels live.
 async function preview(shotName) {
   CASE = CASES[0];
   state = createGameState(CASE);
+  if (shotName === 'voirdire') {
+    courtroom = new Courtroom3D(state, CASE, settings, rng, courtScene);
+    initDebug(state, CASE);
+    applyAction(state, { type: 'SET_PHASE', phase: 'voirDire' });
+    seq.runVoirDire3D(state, CASE, courtroom, courtScene);
+    return;
+  }
   applyAction(state, { type: 'SEAT_JURY', jurors: CASE.jurorPool.slice(0, 12) });
   courtroom = new Courtroom3D(state, CASE, settings, rng, courtScene);
   initDebug(state, CASE);

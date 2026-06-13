@@ -180,6 +180,52 @@ export class CourtScene {
     this._syncAnchors();
   }
 
+  // ---------- voir dire: the candidate panel on the gallery pews ----------
+  // Candidates use the same id hash as setJury, so a struck-or-sworn candidate
+  // looks identical when they later appear in the box.
+  seatVenire(pool) {
+    this.clearVenire();
+    for (const p of this.galleryFolk) p.group.visible = false;
+    // House lights up over the gallery so the candidates' faces read.
+    for (const pl of this.lights.pendantLights.slice(2)) pl.intensity = 52;
+    const XS = [-5.4, -3.5, -1.6, 1.6, 3.5, 5.4];
+    pool.forEach((j, i) => {
+      const row = Math.floor(i / 6), col = i % 6;
+      const p = randomCivilian(j.id + j.name);
+      p.group.position.set(XS[col], 0.45, 6.4 + row * 1.6);
+      p.group.rotation.y = Math.PI;
+      p.setShadows(false);
+      this.scene.add(p.group);
+      this.people.push(p);
+      this._venire.set(j.id, p);
+    });
+  }
+
+  removeVenireMember(id) {
+    const p = this._venire.get(id);
+    if (!p) return;
+    this.scene.remove(p.group);
+    this.people.splice(this.people.indexOf(p), 1);
+    this._venire.delete(id);
+  }
+
+  clearVenire() {
+    if (!this._venire) this._venire = new Map();
+    for (const p of this._venire.values()) {
+      this.scene.remove(p.group);
+      this.people.splice(this.people.indexOf(p), 1);
+    }
+    this._venire.clear();
+    for (const p of this.galleryFolk) p.group.visible = true;
+    for (const pl of this.lights.pendantLights.slice(2)) pl.intensity = 28;
+  }
+
+  // World position of a venire candidate's head (for the label layer).
+  venireHeadPos(id, out) {
+    const p = this._venire.get(id);
+    return p ? this._headOf(p, out) : null;
+  }
+
   seatWitness(portraitSpec) {
     if (this.witness) {
       this.scene.remove(this.witness.group);
@@ -253,7 +299,10 @@ export class CourtScene {
     }
     if (beat.kind === 'ruling') playGavel();
 
-    const map = { wit: this.witness, pros: this.prosecutor, def: this.defenseAtty, judge: this.judge };
+    const map = {
+      wit: this.witness, pros: this.prosecutor, def: this.defenseAtty, judge: this.judge,
+      defendant: this.defendant, jury: this.jurors[0] ?? null,
+    };
     this._setTalker(map[side] ?? null);
     this.director.onBeat(beat, side, ctx);
     this._updateFocusFlags();

@@ -18,6 +18,7 @@ const ANCHOR = {
   defHead:       [-3.10, 1.63, 3.20],
   defendantHead: [-4.10, 1.65, 2.60],
   wellCenter:    [0.00, 1.20, -1.00],
+  venireCenter:  [0.00, 1.50, 8.00],
   doorsVirtual:  [0.00, 1.70, 12.00],
   prosPaper:     [3.50, 0.86, 2.30],
   defPaper:      [-3.50, 0.86, 2.30],
@@ -185,6 +186,10 @@ const SHOTS = {
     pos: [0.60, 2.90, -4.60], lookAt: [0.00, 1.50, 8.00], fov: 44,
     move: { type: 'breathe', v: 0.08 }, hand: 0.10, focus: 'wellCenter', ap: 0.0004, mb: 0.002, deck: null,
   },
+  venire: { // jury selection: the candidate panel seated in the gallery pews, from the bar rail.
+    pos: [0.00, 2.55, 1.20], lookAt: [0.00, 1.35, 8.60], fov: 40,
+    move: { type: 'breathe', v: 0.05 }, hand: 0.12, focus: 'venireCenter', ap: 0.0005, mb: 0.003, deck: null,
+  },
   doors_wide: { // the entrance: rear aisle, walking-in feel, slow forward dolly.
     pos: [0.00, 1.90, 12.50], lookAt: [0.00, 1.70, 2.00], fov: 40,
     move: { type: 'dolly', from: [0.00, 1.90, 12.50], to: [0.00, 1.86, 10.20], dur: 9.0 }, hand: 0.40,
@@ -345,7 +350,10 @@ export class Director {
     const deck = this.examiner === 'pros' ? 'E' : 'W';
 
     let name;
-    if (kind === 'objection') {
+    if (ctx.shot && SHOTS[ctx.shot]) {
+      // authored beat pins its own shot (cinematic sequences)
+      name = this._apply(ctx.shot, SHOTS[ctx.shot], { allowEase: side === this.lastSide });
+    } else if (kind === 'objection') {
       // 1. objection whip: by speaker; punch + impact shake (§7.1)
       name = this._objection(beat.speaker === 'prosecutor' ? 'pros' : 'def');
     } else if (kind === 'ruling') {
@@ -369,6 +377,11 @@ export class Director {
       this.consecWit = 0;
     } else if (side === 'wit') {
       name = this._witnessBeat(h, deck, side); // 6.
+    } else if (side === 'defendant') {
+      name = this._rotate('defendantCut', side); // defendant speaks (table conferences)
+    } else if (side === 'jury') {
+      // the foreperson speaks for the panel
+      name = this._apply('jury_rake', SHOTS.jury_rake, { allowEase: side === this.lastSide });
     } else {
       name = this._rotate('narrator', side); // unknown side → neutral coverage
     }
